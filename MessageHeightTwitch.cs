@@ -263,28 +263,30 @@ namespace MessageHeightTwitch
 			var split = Input.Split(' ').Select(x => x + " ").ToArray();
 			int curChar = 0;
 			for (int x = 0;x < split.Length;/* Increment is at the end of the loop */) {
+				// Currently processing emote name
 				string curEmoteName = null;
+				// Currently processing emote provider
 				EMOTE_PROVIDER curEmoteProvider;
+				// Currently processing emote size
 				SizeF emoteSz;
+				// If current emote was BTTV stripped, this specifies last stripped char in split + 1
 				int emoteStrippedCharsToIndex = -1;
+
 				/*
 				* Emojis:
 				* 
-				* In Twitch web client (with FFZ and BTTV installed), both FFZ and BTTV race
-				* to replace the raw unicode character emoji to their own image of emoji
-				* resulting in some emojis being 18x18 (replaced by FFZ) and some
-				* 20x20 (replaced by BTTV).
+				* Some emojis are supported by FFZ, some are supported by BTTV,
+				* some are not supported by neither. If emoji is supported by both,
+				* it seems that FFZ version is used.
 				* 
-				* I did not look into why, how and who replaces the emojis first - the choice
-				* is yours.
 				*/
 				var emojiMatch = EmojiRegex.Match(split[x].Substring(curChar));
 				if (Params.EmojiReplaceMode != EMOTE_PROVIDER.NONE && emojiMatch.Success && emojiMatch.Index == 0) {
+					// Processing emoji...
 					curEmoteProvider = Params.EmojiReplaceMode;
 					curEmoteName = split[x].Substring(curChar, emojiMatch.Length);
-					if (curEmoteProvider == EMOTE_PROVIDER.FFZ && !FFZIsEmojiSupported(curEmoteName)) {
+					if (curEmoteProvider == EMOTE_PROVIDER.FFZ && !FFZIsEmojiSupported(curEmoteName))
 						curEmoteProvider = EMOTE_PROVIDER.BTTV;
-					}
 					if (curEmoteProvider == EMOTE_PROVIDER.BTTV && !BTTVIsEmojiSupported(curEmoteName)) {
 						curEmoteName = null;
 						curEmoteProvider = EMOTE_PROVIDER.NONE;
@@ -296,6 +298,7 @@ namespace MessageHeightTwitch
 						curChar += emojiMatch.Length;
 					}
 				} else {
+					// Processing emote...
 					bool tryGetEmote()
 					{
 						// Try get BTTV emote
@@ -315,25 +318,40 @@ namespace MessageHeightTwitch
 						}
 						return true;
 					}
+
+					// Try to get emote normally, just crop the space at the end
 					curEmoteName = split[x].Substring(curChar).TrimEnd(' ');
 					if (!tryGetEmote()) {
+						// No dice, try to:
 						curEmoteName = split[x].Substring(curChar);
 						emojiMatch = EmojiRegex.Match(curEmoteName);
+						
+						//	...limit current lookup to first possible emoji
 						if (emojiMatch.Success)
 							curEmoteName = curEmoteName.Substring(0, emojiMatch.Index);
 						else
-							curEmoteName = curEmoteName.TrimEnd(' ');
+							curEmoteName = curEmoteName.TrimEnd(' '); // ...or just crop the space at the end
 
+						//	...perform a BTTV strip
 						var oldCurEmoteName = curEmoteName;
 						curEmoteName = BTTVEmoteStrip.Replace(curEmoteName, "");
+
+						/*
+						 * If stripped anything, save what we stripped.
+						 * 
+						 * This works because there is nothing at the start of the string except stripped chars.
+						 */
 						if (oldCurEmoteName != curEmoteName)
-							emoteStrippedCharsToIndex = oldCurEmoteName.Length; // This works because there is nothing at the start of the string except stripped chars
+							emoteStrippedCharsToIndex = oldCurEmoteName.Length;
+
+						// Try to get emote again
 						if (!tryGetEmote())
 							curEmoteName = null;
 					}
 					if (emoteStrippedCharsToIndex != -1 &&
 						!Params.ApplyBTTVStripToFFZ &&
 						curEmoteProvider == EMOTE_PROVIDER.FFZ) {
+						// If we stripped an FFZ emoji and Params.ApplyBTTVStripToFFZ wasn't specified, invalidate the emote.
 						curEmoteName = null;
 					}
 				}
@@ -365,6 +383,10 @@ namespace MessageHeightTwitch
 						cur.Width = emoteSz.Width;
 					} else {
 						if (curEmoteProvider == EMOTE_PROVIDER.BTTV) {
+							/*
+							 * For BTTV emotes, apply 1.33px margin at emote which are on the start of the line,
+							 * 1.33px * 2 for which are in the middle of the line
+							 */
 							bool notEndsWithSpace = (curChar + curEmoteName.Length) == split[x].Length || split[x][curChar + curEmoteName.Length] != ' ';
 							if (cur.Width == 0 && notEndsWithSpace)
 								cur.Width += 1.33f;
@@ -377,20 +399,18 @@ namespace MessageHeightTwitch
 					}
 
 					/* 
-					* Remove the emote from current split, leaving the space at the end if needed
-					* and protect Chatterino users if needed by leaving the prefix and suffix characters
-					* that were otherwise removed by BTTV (emotes only)
+					* Push curChar over the current processed emote and protect
+					* Chatterino users if needed by leaving the prefix and suffix characters
+					* that were otherwise removed by BTTV (emotes only).
 					*/
 					if (!curEmoteProvider.HasFlag(EMOTE_PROVIDER.EMOJI)) {
-						if (Params.AddStrippedEmoteCharsToCalc && emoteStrippedCharsToIndex != -1) {
-							split[x] = split[x].Substring(curChar, emoteStrippedCharsToIndex).Replace(curEmoteName, "");
-						} else {
-							curChar += curEmoteName.Length;
-							/*if (split[x][split[x].Length - 1] == ' ')
-								split[x] = " ";
+						if (emoteStrippedCharsToIndex != -1) {
+							if (Params.AddStrippedEmoteCharsToCalc)
+								split[x] = split[x].Substring(curChar, emoteStrippedCharsToIndex).Replace(curEmoteName, "");
 							else
-								split[x] = "";*/
-						}
+								curChar = emoteStrippedCharsToIndex;
+						} else
+							curChar += curEmoteName.Length;
 					}
 					continue;
 				}
@@ -400,8 +420,8 @@ namespace MessageHeightTwitch
 				* 
 				* Loop each character in current word, add its width to current line and adjust height if needed.
 				* 
-				* If current line is larger than the chat width and has not wrapped to next line once
-				* , for example, message
+				* If current line is larger than the chat width and has not wrapped to next line once,
+				* for example, message
 				* 
 				* |TETYYS: Very nice message with some word wra|pping
 				* |                                            |
