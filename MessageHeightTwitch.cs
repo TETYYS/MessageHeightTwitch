@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace MessageHeightTwitch
@@ -69,22 +70,28 @@ namespace MessageHeightTwitch
 
 		private readonly Regex BTTVEmoteStrip = new Regex(@"(^[~!@#$%\^&\*\(\)]+|[~!@#$%\^&\*\(\)]+$)", RegexOptions.Compiled);
 
+		[Flags]
 		public enum EMOTE_PROVIDER
 		{
 			/// <summary>
 			/// Original
 			/// </summary>
-			NONE,
+			NONE = 1,
 
 			/// <summary>
 			/// BTTV (20x20 emojis)
 			/// </summary>
-			BTTV,
+			BTTV = 2,
 
 			/// <summary>
 			/// FFZ (18x18 emojis), this provider is usually used on emojis
 			/// </summary>
-			FFZ
+			FFZ = 4,
+
+			/// <summary>
+			/// Is an emoji
+			/// </summary>
+			EMOJI = 8
 		}
 
 		public enum LOCALIZED_NAME_MODE
@@ -246,26 +253,6 @@ namespace MessageHeightTwitch
 					break;
 			}
 
-			/*
-			 * Pre-processing 2, this cleans-up emojis:
-			 * 
-			 * Whole string is stripped of NULs (they are replaced by spaces),
-			 * then all emojis are replaced with a NUL on both sides and
-			 * whole input is cleaned of double NULs.
-			 *
-			 * Later, whole input is split by space and NUL, but has different behavior
-			 * regarding adding spaces at the end.
-			 */
-			Input = Input.Replace("\0", " ");
-			Input = EmojiRegex.Replace(Input, "\0$0\0");
-			int index;
-			while ((index = Input.IndexOf("\0\0", StringComparison.Ordinal)) != -1)
-				Input = Input.Remove(index, 1);
-			if (Input[0] == '\0')
-				Input = Input.Remove(0, 1);
-			if (Input[Input.Length - 1] == '\0')
-				Input = Input.Remove(Input.Length - 1, 1);
-
 			float finalH = 0; // Final height
 			SizeF cur = new SizeF(); // Current line size
 			SizeF sz; // Current charater size
@@ -273,208 +260,238 @@ namespace MessageHeightTwitch
 			// Assuming all badges are smaller than the whole chat width
 			cur.Width += Params.NumberOfBadges * 21.0f;
 
-			var preEmojiSplit = Input.Split(' ');
-			for (int i = 0;i < preEmojiSplit.Length;i++) {
+			var split = Input.Split(' ').Select(x => x + " ").ToArray();
+			int curChar = 0;
+			for (int x = 0;x < split.Length;/* Increment is at the end of the loop */) {
+				string curEmoteName = null;
+				EMOTE_PROVIDER curEmoteProvider;
+				SizeF emoteSz;
+				int emoteStrippedCharsToIndex = -1;
 				/*
-				 * Splits:
-				 * 
-				 * Split below adds spaces that were removed during pre-emoji split
-				 * and splits the split again on NUL, seperating which splits
-				 * were due to emojis and which were due to spaces between words
-				 */
-				var split = (preEmojiSplit[i] + " ").Split('\0');
-				for (int x = 0;x < split.Length;x++) {
-					string curEmoteName = BTTVEmoteStrip.Replace(split[x].TrimEnd(' '), "");
-					EMOTE_PROVIDER curEmoteProvider = EMOTE_PROVIDER.BTTV;
-					// Try get BTTV emote
-					SizeF emoteSz;
-					if (!BTTVEmotes.TryGetValue(curEmoteName, out emoteSz)) {
-						curEmoteProvider = EMOTE_PROVIDER.FFZ;
-						
-						if (Params.ApplyBTTVStripToFFZ)
-							curEmoteName = BTTVEmoteStrip.Replace(split[x].TrimEnd(' '), "");
-						else
-							curEmoteName = split[x].TrimEnd(' ');
+				* Emojis:
+				* 
+				* In Twitch web client (with FFZ and BTTV installed), both FFZ and BTTV race
+				* to replace the raw unicode character emoji to their own image of emoji
+				* resulting in some emojis being 18x18 (replaced by FFZ) and some
+				* 20x20 (replaced by BTTV).
+				* 
+				* I did not look into why, how and who replaces the emojis first - the choice
+				* is yours.
+				*/
+				var emojiMatch = EmojiRegex.Match(split[x].Substring(curChar));
+				if (Params.EmojiReplaceMode != EMOTE_PROVIDER.NONE && emojiMatch.Success && emojiMatch.Index == 0) {
+					curEmoteProvider = Params.EmojiReplaceMode;
+					curEmoteName = split[x].Substring(curChar, emojiMatch.Length);
+					if (curEmoteProvider == EMOTE_PROVIDER.FFZ && !FFZIsEmojiSupported(curEmoteName)) {
+						curEmoteProvider = EMOTE_PROVIDER.BTTV;
+					}
+					if (curEmoteProvider == EMOTE_PROVIDER.BTTV && !BTTVIsEmojiSupported(curEmoteName)) {
+						curEmoteName = null;
+						curEmoteProvider = EMOTE_PROVIDER.NONE;
+					}
 
-						// Try get FFZ emote
-						if (!FFZEmotes.TryGetValue(curEmoteName, out emoteSz))
+					if (curEmoteProvider != EMOTE_PROVIDER.NONE) {
+						emoteSz = curEmoteProvider == EMOTE_PROVIDER.BTTV ? new SizeF(20, 20) : new SizeF(18, 18);
+						curEmoteProvider |= EMOTE_PROVIDER.EMOJI;
+						curChar += emojiMatch.Length;
+					}
+				} else {
+					bool tryGetEmote()
+					{
+						// Try get BTTV emote
+						curEmoteProvider = EMOTE_PROVIDER.BTTV;
+						if (!BTTVEmotes.TryGetValue(curEmoteName, out emoteSz)) {
+							curEmoteProvider = EMOTE_PROVIDER.FFZ;
+
+							// Try get FFZ emote
+							if (!FFZEmotes.TryGetValue(curEmoteName, out emoteSz)) {
+								if (Params.AdditionalEmotes == null)
+									return false;
+
+								// Try get channel sub emote (passed to this method by chat parser)
+								curEmoteProvider = EMOTE_PROVIDER.NONE;
+								return Params.AdditionalEmotes.TryGetValue(curEmoteName, out emoteSz);
+							}
+						}
+						return true;
+					}
+					curEmoteName = split[x].Substring(curChar).TrimEnd(' ');
+					if (!tryGetEmote()) {
+						curEmoteName = split[x].Substring(curChar);
+						emojiMatch = EmojiRegex.Match(curEmoteName);
+						if (emojiMatch.Success)
+							curEmoteName = curEmoteName.Substring(0, emojiMatch.Index);
+						else
+							curEmoteName = curEmoteName.TrimEnd(' ');
+
+						var oldCurEmoteName = curEmoteName;
+						curEmoteName = BTTVEmoteStrip.Replace(curEmoteName, "");
+						if (oldCurEmoteName != curEmoteName)
+							emoteStrippedCharsToIndex = oldCurEmoteName.Length; // This works because there is nothing at the start of the string except stripped chars
+						if (!tryGetEmote())
 							curEmoteName = null;
 					}
+					if (emoteStrippedCharsToIndex != -1 &&
+						!Params.ApplyBTTVStripToFFZ &&
+						curEmoteProvider == EMOTE_PROVIDER.FFZ) {
+						curEmoteName = null;
+					}
+				}
 
-					// Try get channel sub emote (passed to this method by chat parser)
-					if (curEmoteName == null && Params.AdditionalEmotes != null) {
-						curEmoteProvider = EMOTE_PROVIDER.NONE;
-						if (Params.AdditionalEmotes.TryGetValue(split[x].TrimEnd(' '), out emoteSz))
-							curEmoteName = split[x].TrimEnd(' ');
+				if (curEmoteName != null) {
+					/*
+					* Emotes/Emojis:
+					* 
+					* First, apply margin to the emote if needed (-5 on top and bottom)
+					* limited to CHAR_W_MARG (lowest boundary)
+					* 
+					* Check if upcoming emote is wider than the chat width:
+					* 
+					* if so then increase the final height (apply line margin if needed)
+					* and put emote on a new line.
+					* 
+					* If not, increase the width and height, if this is the biggest emote
+					* of current line yet.
+					*/
+					if (Params.EmoteMargin)
+						emoteSz = new SizeF(emoteSz.Width, Math.Max(emoteSz.Height - 10, CHAR_W_MARG));
+
+					if (cur.Width + emoteSz.Width >= CHAT_WIDTH) {
+						if (Params.LineMargin)
+							finalH += Math.Max(cur.Height, CHAR_W_MARG);
+						else
+							finalH += cur.Height;
+						cur.Height = emoteSz.Height;
+						cur.Width = emoteSz.Width;
+					} else {
+						if (curEmoteProvider == EMOTE_PROVIDER.BTTV) {
+							bool notEndsWithSpace = (curChar + curEmoteName.Length) == split[x].Length || split[x][curChar + curEmoteName.Length] != ' ';
+							if (cur.Width == 0 && notEndsWithSpace)
+								cur.Width += 1.33f;
+							else if (notEndsWithSpace)
+								cur.Width += 1.33f * 2;
+						}
+
+						cur.Width += emoteSz.Width;
+						cur.Height = Math.Max(cur.Height, emoteSz.Height);
 					}
 
-					/*
-					 * Emojis:
-					 * 
-					 * In Twitch web client (with FFZ and BTTV installed), both FFZ and BTTV race
-					 * to replace the raw unicode character emoji to their own image of emoji
-					 * resulting in some emojis being 18x18 (replaced by FFZ) and some
-					 * 20x20 (replaced by BTTV).
-					 * 
-					 * I did not look into why, how and who replaces the emojis first - the choice
-					 * is yours.
-					 */
-					if (Params.EmojiReplaceMode != EMOTE_PROVIDER.NONE && EmojiRegex.IsMatch(split[x])) {
-						EMOTE_PROVIDER realProvider = Params.EmojiReplaceMode;
-						if (realProvider == EMOTE_PROVIDER.FFZ && !FFZIsEmojiSupported(split[x]))
-							realProvider = EMOTE_PROVIDER.BTTV;
-						if (realProvider == EMOTE_PROVIDER.BTTV && !BTTVIsEmojiSupported(split[x]))
-							realProvider = EMOTE_PROVIDER.NONE;
-
-						switch (realProvider) {
-							case EMOTE_PROVIDER.BTTV:
-								emoteSz = new SizeF(20, 20);
-								curEmoteProvider = EMOTE_PROVIDER.BTTV;
-								break;
-							case EMOTE_PROVIDER.FFZ:
-								emoteSz = new SizeF(18, 18);
-								curEmoteProvider = EMOTE_PROVIDER.FFZ;
-								break;
+					/* 
+					* Remove the emote from current split, leaving the space at the end if needed
+					* and protect Chatterino users if needed by leaving the prefix and suffix characters
+					* that were otherwise removed by BTTV (emotes only)
+					*/
+					if (!curEmoteProvider.HasFlag(EMOTE_PROVIDER.EMOJI)) {
+						if (Params.AddStrippedEmoteCharsToCalc && emoteStrippedCharsToIndex != -1) {
+							split[x] = split[x].Substring(curChar, emoteStrippedCharsToIndex).Replace(curEmoteName, "");
+						} else {
+							curChar += curEmoteName.Length;
+							/*if (split[x][split[x].Length - 1] == ' ')
+								split[x] = " ";
+							else
+								split[x] = "";*/
 						}
 					}
+					continue;
+				}
 
-					if (curEmoteName != null) {
-						/*
-						 * Emotes:
-						 * 
-						 * First, apply margin to the emote if needed (-5 on top and bottom)
-						 * limited to CHAR_W_MARG (lowest boundary)
-						 * 
-						 * Check if upcoming emote is wider than the chat width:
-						 * 
-						 * if so then increase the final height (apply line margin if needed)
-						 * and put emote on a new line.
-						 * 
-						 * If not, increase the width and height, if this is the biggest emote
-						 * of current line yet.
-						 */
-						if (Params.EmoteMargin)
-							emoteSz = new SizeF(emoteSz.Width, Math.Max(emoteSz.Height - 10, CHAR_W_MARG));
+				/*
+				* Words:
+				* 
+				* Loop each character in current word, add its width to current line and adjust height if needed.
+				* 
+				* If current line is larger than the chat width and has not wrapped to next line once
+				* , for example, message
+				* 
+				* |TETYYS: Very nice message with some word wra|pping
+				* |                                            |
+				* |                                            |
+				* 
+				* would wrap to
+				* 
+				* |TETYYS: Very nice message with some word    |
+				* |wrapping                                    |
+				* |                                            |
+				* 
+				* In situations where the whole word is wider than the whole chat width, it wraps twice, like so:
+				* 
+				* |TETYYS: Very nice message with some SPAMSPAM|SPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAM
+				* |                                            |
+				* |                                            |
+				* 
+				* =>
+				* 
+				* |TETYYS: Very nice message with some 
+				* |SPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAM|
+				* |SPAMSPAM                                    |
+				* 
+				* ===
+				* 
+				* Additionally, some special characters do not word wrap,
+				* move to next line without moving the whole word and reset (enable)
+				* the ability of subsequent whole words to move to the next line.
+				* 
+				* If this kind of character is encountered, save the position of it (+1),
+				* to be able to go back to this character. Measure subsequent words and move them
+				* to next line if the ability of this rule was reset (enabled) or wasn't used before
+				* 
+				* Apply margins, if specified.
+				*/
+				SizeF old = cur;
+				bool wrappedOnce = false;
+				int wrapReset = curChar;
+				for (;curChar < split[x].Length;curChar++) {
+					emojiMatch = EmojiRegex.Match(split[x].Substring(curChar));
+					if (emojiMatch.Success && emojiMatch.Index == 0 &&
+						(FFZIsEmojiSupported(split[x].Substring(curChar, emojiMatch.Length)) ||
+							BTTVIsEmojiSupported(split[x].Substring(curChar, emojiMatch.Length)))) {
+						// Encountered emoji, let emote block process it
+						break;
+					}
 
-						if (cur.Width + emoteSz.Width >= CHAT_WIDTH) {
+					int iChar = (int)split[x][curChar];
+					if (Char.IsHighSurrogate(split[x][curChar]) &&
+						curChar < split[x].Length - 1 &&
+						Char.IsSurrogatePair(split[x][curChar], split[x][curChar + 1])) {
+						iChar = Char.ConvertToUtf32(split[x][curChar], split[x][curChar + 1]);
+						curChar++;
+					}
+					var props = CharacterProperties[iChar];
+
+					sz = new SizeF(props.Width, 9);
+					cur.Width += sz.Width;
+					cur.Height = Math.Max(cur.Height, sz.Height);
+					bool charWrapping = !Params.IgnoreCharWrappingRules && props.CharWrapping;
+
+					if (charWrapping) {
+						wrappedOnce = false;
+						wrapReset = curChar + 1;
+					}
+
+					if (cur.Width >= CHAT_WIDTH) {
+						if (wrappedOnce || charWrapping) {
 							if (Params.LineMargin)
 								finalH += Math.Max(cur.Height, CHAR_W_MARG);
 							else
 								finalH += cur.Height;
-							cur.Height = emoteSz.Height;
-							cur.Width = emoteSz.Width;
+							cur.Width = sz.Width;
+							cur.Height = sz.Height;
 						} else {
-							if (curEmoteProvider == EMOTE_PROVIDER.BTTV) {
-								if (cur.Width == 0 && !split[x].EndsWith(" "))
-									cur.Width += 1.33f;
-								else if (!split[x].EndsWith(" "))
-									cur.Width += 1.33f * 2;
-							}
-
-							cur.Width += emoteSz.Width;
-							cur.Height = Math.Max(cur.Height, emoteSz.Height);
-						}
-
-						/* 
-						 * Remove the emote from current split, leaving the space at the end if needed
-						 * and protect Chatterino users if needed by leaving the prefix and suffix characters
-						 * that were otherwise removed by BTTV
-						 */
-						if (Params.AddStrippedEmoteCharsToCalc && curEmoteName != null && split[x].TrimEnd(' ') != curEmoteName)
-							split[x] = split[x].Replace(curEmoteName, "");
-						else {
-							if (split[x][split[x].Length - 1] == ' ')
-								split[x] = " ";
+							if (Params.LineMargin)
+								finalH += Math.Max(old.Height, CHAR_W_MARG);
 							else
-								split[x] = "";
+								finalH += old.Height;
+							cur.Width = 0;
+							cur.Height = 0;
+							curChar = wrapReset - 1; // Compensate for next increment
+							wrappedOnce = true;
 						}
 					}
+				}
 
-					/*
-					 * Words:
-					 * 
-					 * Loop each character in current word, add its width to current line and adjust height if needed.
-					 * 
-					 * If current line is larger than the chat width and has not wrapped to next line once
-					 * , for example, message
-					 * 
-					 * |TETYYS: Very nice message with some word wra|pping
-					 * |                                            |
-					 * |                                            |
-					 * 
-					 * would wrap to
-					 * 
-					 * |TETYYS: Very nice message with some word    |
-					 * |wrapping                                    |
-					 * |                                            |
-					 * 
-					 * In situations where the whole word is wider than the whole chat width, it wraps twice, like so:
-					 * 
-					 * |TETYYS: Very nice message with some SPAMSPAM|SPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAM
-					 * |                                            |
-					 * |                                            |
-					 * 
-					 * =>
-					 * 
-					 * |TETYYS: Very nice message with some 
-					 * |SPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAMSPAM|
-					 * |SPAMSPAM                                    |
-					 * 
-					 * ===
-					 * 
-					 * Additionally, some special characters do not word wrap,
-					 * move to next line without moving the whole word and reset (enable)
-					 * the ability of subsequent whole words to move to the next line.
-					 * 
-					 * If this kind of character is encountered, save the position of it (+1),
-					 * to be able to go back to this character. Measure subsequent words and move them
-					 * to next line if the ability of this rule was reset (enabled) or wasn't used before
-					 * 
-					 * Apply margins, if specified.
-					 */
-					SizeF old = cur;
-					bool wrappedOnce = false;
-					int wrapReset = 0;
-					for (int c = 0;c < split[x].Length;c++) {
-						int iChar = (int)split[x][c];
-						if (Char.IsHighSurrogate(split[x][c]) &&
-							c < split[x].Length - 1 &&
-							Char.IsSurrogatePair(split[x][c], split[x][c + 1])) {
-							iChar = Char.ConvertToUtf32(split[x][c], split[x][c + 1]);
-							c++;
-						}
-						var props = CharacterProperties[iChar];
-
-						sz = new SizeF(props.Width, 9);
-						cur.Width += sz.Width;
-						cur.Height = Math.Max(cur.Height, sz.Height);
-						bool charWrapping = !Params.IgnoreCharWrappingRules && props.CharWrapping;
-
-						if (charWrapping) {
-							wrappedOnce = false;
-							wrapReset = c + 1;
-						}
-
-						if (cur.Width >= CHAT_WIDTH) {
-							if (wrappedOnce || charWrapping) {
-								if (Params.LineMargin)
-									finalH += Math.Max(cur.Height, CHAR_W_MARG);
-								else
-									finalH += cur.Height;
-								cur.Width = sz.Width;
-								cur.Height = sz.Height;
-							} else {
-								if (Params.LineMargin)
-									finalH += Math.Max(old.Height, CHAR_W_MARG);
-								else
-									finalH += old.Height;
-								cur.Width = 0;
-								cur.Height = 0;
-								c = wrapReset;
-								wrappedOnce = true;
-							}
-						}
-					}
+				if (curChar == split[x].Length) {
+					x++;
+					curChar = 0;
 				}
 			}
 
