@@ -57,6 +57,22 @@ namespace MessageHeightTwitch
 			Debug.Assert(CharacterProperties['@'].Width == 12.171875f);
 		}
 
+		private FFZEmoteProvider FFZEmoteProvider;
+		private BTTVEmoteProvider BTTVEmoteProvider;
+
+		public MessageHeightTwitch(string CharMapPath, string Channel)
+		{
+			FillCharMap(CharMapPath);
+			FFZEmoteProvider = new FFZEmoteProvider();
+			FFZEmoteProvider.Initialize(Channel).Wait();
+			BTTVEmoteProvider = new BTTVEmoteProvider();
+			BTTVEmoteProvider.Initialize(Channel).Wait();
+			this.BTTVEmotes = BTTVEmoteProvider.EmoteCache;
+			this.FFZEmotes = FFZEmoteProvider.EmoteCache;
+			this.BTTVIsEmojiSupported = (e) => BTTVEmoteProvider.IsEmojiSupported(e);
+			this.FFZIsEmojiSupported = (e) => FFZEmoteProvider.IsEmojiSupported(e);
+		}
+
 		public MessageHeightTwitch(string CharMapPath, Dictionary<string, SizeF> BTTVEmotes, Dictionary<string, SizeF> FFZEmotes, Func<string, bool> BTTVIsEmojiSupported, Func<string, bool> FFZIsEmojiSupported)
 		{
 			FillCharMap(CharMapPath);
