@@ -24,8 +24,11 @@ namespace MessageHeightTwitch
 		}
 
 		private CharacterProperty[] CharacterProperties;
-		private readonly Dictionary<string, SizeF> BTTVEmotes;
-		private readonly Dictionary<string, SizeF> FFZEmotes;
+
+		public delegate bool Fx3rdPartyEmote(string Name, out SizeF Size);
+		private readonly Fx3rdPartyEmote BTTVGetEmote;
+		private readonly Fx3rdPartyEmote FFZGetEmote;
+		private readonly Func<string, string, SizeF> TwitchGetEmote;
 
 		private readonly Func<string, bool> BTTVIsEmojiSupported;
 		private readonly Func<string, bool> FFZIsEmojiSupported;
@@ -59,6 +62,7 @@ namespace MessageHeightTwitch
 
 		private FFZEmoteProvider FFZEmoteProvider;
 		private BTTVEmoteProvider BTTVEmoteProvider;
+		private TwitchEmotes TwitchEmotes;
 
 		public MessageHeightTwitch(string CharMapPath, string Channel)
 		{
@@ -67,17 +71,20 @@ namespace MessageHeightTwitch
 			FFZEmoteProvider.Initialize(Channel).Wait();
 			BTTVEmoteProvider = new BTTVEmoteProvider();
 			BTTVEmoteProvider.Initialize(Channel).Wait();
-			this.BTTVEmotes = BTTVEmoteProvider.EmoteCache;
-			this.FFZEmotes = FFZEmoteProvider.EmoteCache;
+			TwitchEmotes = new TwitchEmotes();
+			this.BTTVGetEmote = BTTVEmoteProvider.TryGetEmote;
+			this.FFZGetEmote = FFZEmoteProvider.TryGetEmote;
+			this.TwitchGetEmote = TwitchEmotes.GetEmote;
 			this.BTTVIsEmojiSupported = (e) => BTTVEmoteProvider.IsEmojiSupported(e);
 			this.FFZIsEmojiSupported = (e) => FFZEmoteProvider.IsEmojiSupported(e);
 		}
 
-		public MessageHeightTwitch(string CharMapPath, Dictionary<string, SizeF> BTTVEmotes, Dictionary<string, SizeF> FFZEmotes, Func<string, bool> BTTVIsEmojiSupported, Func<string, bool> FFZIsEmojiSupported)
+		public MessageHeightTwitch(string CharMapPath, Fx3rdPartyEmote BTTVGetEmote, Fx3rdPartyEmote FFZGetEmote, Func<string, string, SizeF> TwitchGetEmote, Func<string, bool> BTTVIsEmojiSupported, Func<string, bool> FFZIsEmojiSupported)
 		{
 			FillCharMap(CharMapPath);
-			this.BTTVEmotes = BTTVEmotes;
-			this.FFZEmotes = FFZEmotes;
+			this.BTTVGetEmote = BTTVGetEmote;
+			this.FFZGetEmote = FFZGetEmote;
+			this.TwitchGetEmote = TwitchGetEmote;
 			this.BTTVIsEmojiSupported = BTTVIsEmojiSupported;
 			this.FFZIsEmojiSupported = FFZIsEmojiSupported;
 		}
@@ -136,9 +143,9 @@ namespace MessageHeightTwitch
 			public int NumberOfBadges;
 
 			/// <summary>
-			/// Custom emote to size map - useful for subscriber (channel) emotes
+			/// Twitch emotes, name to image url
 			/// </summary>
-			public Dictionary<string, SizeF> AdditionalEmotes;
+			public Dictionary<string, string> TwitchEmotes;
 
 			/// <summary>
 			/// Apply negative margins to emotes, making large emotes overlap on other lines
@@ -192,7 +199,7 @@ namespace MessageHeightTwitch
 				get {
 					var ret = new CalculateMessageHeightParams();
 					ret.NumberOfBadges = 0;
-					ret.AdditionalEmotes = null;
+					ret.TwitchEmotes = null;
 					ret.EmoteMargin = true;
 					ret.LineMargin = true;
 					ret.WholeMargin = true;
@@ -215,11 +222,11 @@ namespace MessageHeightTwitch
 		/// <param name="NumberOfBadges">Number of badges associated with the poster</param>
 		/// <param name="AdditionalEmotes">Custom emote to size map (primarily used for channel emotes)</param>
 		/// <returns>Height of measured message in pixels</returns>
-		public float CalculateMessageHeight(string Input, string Username, string DisplayName, int NumberOfBadges, Dictionary<string, SizeF> AdditionalEmotes)
+		public float CalculateMessageHeight(string Input, string Username, string DisplayName, int NumberOfBadges, Dictionary<string, string> TwitchEmotes)
 		{
 			var param = CalculateMessageHeightParams.Default;
 			param.NumberOfBadges = NumberOfBadges;
-			param.AdditionalEmotes = AdditionalEmotes;
+			param.TwitchEmotes = TwitchEmotes;
 			return CalculateMessageHeightEx(Input, Username, DisplayName, param);
 		}
 
@@ -276,7 +283,7 @@ namespace MessageHeightTwitch
 			// Assuming all badges are smaller than the whole chat width
 			cur.Width += Params.NumberOfBadges * 21.0f;
 
-			var split = Input.Split(' ').Select(x => x + " ").ToArray();
+			var split = Regex.Split(Input, @"(?<=[ -])");
 			int curChar = 0;
 			for (int x = 0;x < split.Length;/* Increment is at the end of the loop */) {
 				// Currently processing emote name
@@ -319,17 +326,22 @@ namespace MessageHeightTwitch
 					{
 						// Try get BTTV emote
 						curEmoteProvider = EMOTE_PROVIDER.BTTV;
-						if (!BTTVEmotes.TryGetValue(curEmoteName, out emoteSz)) {
+						if (!BTTVGetEmote(curEmoteName, out emoteSz)) {
 							curEmoteProvider = EMOTE_PROVIDER.FFZ;
 
 							// Try get FFZ emote
-							if (!FFZEmotes.TryGetValue(curEmoteName, out emoteSz)) {
-								if (Params.AdditionalEmotes == null)
+							if (!FFZGetEmote(curEmoteName, out emoteSz)) {
+								if (Params.TwitchEmotes == null)
 									return false;
 
 								// Try get channel sub emote (passed to this method by chat parser)
 								curEmoteProvider = EMOTE_PROVIDER.NONE;
-								return Params.AdditionalEmotes.TryGetValue(curEmoteName, out emoteSz);
+								string url;
+								if (Params.TwitchEmotes.TryGetValue(curEmoteName, out url)) {
+									emoteSz = TwitchGetEmote(curEmoteName, url);
+									return true;
+								}
+								return false;
 							}
 						}
 						return true;
@@ -476,13 +488,18 @@ namespace MessageHeightTwitch
 				SizeF old = cur;
 				bool wrappedOnce = false;
 				int wrapReset = curChar;
-				for (;curChar < split[x].Length;curChar++) {
-					emojiMatch = EmojiRegex.Match(split[x].Substring(curChar));
-					if (emojiMatch.Success && emojiMatch.Index == 0 &&
-						(FFZIsEmojiSupported(split[x].Substring(curChar, emojiMatch.Length)) ||
-							BTTVIsEmojiSupported(split[x].Substring(curChar, emojiMatch.Length)))) {
-						// Encountered emoji, let emote block process it
-						break;
+				emojiMatch = EmojiRegex.Match(split[x].Substring(curChar));
+				for (int oldCurChar = curChar;curChar < split[x].Length;curChar++) {
+					if (emojiMatch.Success && emojiMatch.Index == curChar - oldCurChar) {
+						if (!FFZIsEmojiSupported(split[x].Substring(curChar, emojiMatch.Length)) &&
+							!BTTVIsEmojiSupported(split[x].Substring(curChar, emojiMatch.Length))) {
+							emojiMatch = EmojiRegex.Match(split[x].Substring(curChar + 1));
+							oldCurChar = curChar + 1;
+							// Emoji not supported, search for a new one
+						} else {
+							// Encountered emoji, let emote block process it
+							break;
+						}
 					}
 
 					int iChar = (int)split[x][curChar];

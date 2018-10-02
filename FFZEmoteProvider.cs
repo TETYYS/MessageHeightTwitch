@@ -50,13 +50,8 @@ namespace MessageHeightTwitch
 			public object[][] e;
 		}
 
-		public SizeF? GetEmote(string Name)
-		{
-			SizeF ret;
-			if (EmoteCache.TryGetValue(Name, out ret))
-				return ret;
-			return null;
-		}
+		public bool TryGetEmote(string Name, out SizeF Size) => EmoteCache.TryGetValue(Name, out Size);
+
 		public async Task Initialize(string Channel)
 		{
 			var rawJson = await Client.GetAsync("https://api.frankerfacez.com/v1/set/global");

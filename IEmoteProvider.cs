@@ -10,7 +10,7 @@ namespace MessageHeightTwitch
 	{
 		Dictionary<string, SizeF> EmoteCache { get; }
 
-		SizeF? GetEmote(string Name);
+		bool TryGetEmote(string Name, out SizeF Size);
 		Task Initialize(string Channel);
 
 		bool IsEmojiSupported(string Emoji);

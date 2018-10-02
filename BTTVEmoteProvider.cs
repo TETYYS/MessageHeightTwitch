@@ -38,13 +38,7 @@ namespace MessageHeightTwitch
 			public string category;
 		}
 
-		public SizeF? GetEmote(string Name)
-		{
-			SizeF ret;
-			if (EmoteCache.TryGetValue(Name, out ret))
-				return ret;
-			return null;
-		}
+		public bool TryGetEmote(string Name, out SizeF Size) => EmoteCache.TryGetValue(Name, out Size);
 
 		public async Task Initialize(string Channel)
 		{
