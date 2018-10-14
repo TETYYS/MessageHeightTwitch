@@ -1,10 +1,8 @@
 ﻿using NeoSmart.Unicode;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
+using SixLabors.Primitives;
 using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;

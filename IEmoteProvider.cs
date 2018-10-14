@@ -1,7 +1,5 @@
-﻿using System;
+﻿using SixLabors.Primitives;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MessageHeightTwitch

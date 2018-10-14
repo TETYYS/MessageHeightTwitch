@@ -1,10 +1,7 @@
 ﻿using SixLabors.ImageSharp;
-using System;
+using SixLabors.Primitives;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Drawing;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MessageHeightTwitch
