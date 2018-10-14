@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SixLabors.ImageSharp;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
@@ -21,7 +22,7 @@ namespace MessageHeightTwitch
 					Url
 				).ContinueWith(
 					(res) => {
-						var img = Image.FromStream(res.Result);
+						var img = Image.Load(res.Result);
 						Cache[Name] = new SizeF(img.Width, img.Height);
 					}, TaskContinuationOptions.OnlyOnRanToCompletion
 				);

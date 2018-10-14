@@ -4,8 +4,9 @@ typedef struct _TwitchEmote
 	const char *Url;
 } TwitchEmote;
 
-typedef float(CalculateMessageHeight)(const char *Input, const char *Username, const char *DisplayName, int NumberOfBadges, TwitchEmote *TwitchEmotes, int TwitchEmotesLen);
-typedef void(Init)(const char *CharMapPath, const char *Channel);
+typedef float(CalculateMessageHeight)(const char *Channel, const char *Input, const char *Username, const char *DisplayName, int NumberOfBadges, TwitchEmote *TwitchEmotes, int TwitchEmotesLen);
+typedef int(FxInitCharMap)(const char *CharMapPath);
+typedef int(FxInitChannel)(const char *Channel);
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,8 +17,9 @@ extern "C" {
 		const char* clrFilesAbsolutePath,
 		const char* managedAssemblyAbsolutePath);
 	extern CalculateMessageHeight *CreateCalculateMessageHeightDelegate();
-	extern float CalculateMessageHeightDirect(const char *Input, const char *Username, const char *DisplayName, int NumberOfBadges, TwitchEmote *TwitchEmotes, int TwitchEmotesLen);
-	extern int InitMessageHeightTwitch(const char *CharMapPath, const char *Channel);
+	extern float CalculateMessageHeightDirect(const char *Channel, const char *Input, const char *Username, const char *DisplayName, int NumberOfBadges, TwitchEmote *TwitchEmotes, int TwitchEmotesLen);
+	extern int InitCharMap(const char *CharMapPath);
+	extern int InitChannel(const char *Channel);
 #ifdef __cplusplus
 }
 #endif

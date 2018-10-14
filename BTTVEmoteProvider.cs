@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -52,7 +53,7 @@ namespace MessageHeightTwitch
 
 			void addToList(string Name, Stream EmoteStream)
 			{
-				var img = Image.FromStream(EmoteStream);
+				var img = Image.Load(EmoteStream);
 				lock (EmoteCache) {
 					EmoteCache.Add(Name, new SizeF(img.Width, img.Height));
 				}

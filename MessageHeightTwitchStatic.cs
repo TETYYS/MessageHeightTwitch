@@ -10,22 +10,57 @@ class MessageHeightTwitchStatic
 		public string Url;
 	}
 
-	private static MessageHeightTwitch.MessageHeightTwitch Instance;
+	private static Dictionary<string, MessageHeightTwitch.MessageHeightTwitch> Instances = new Dictionary<string, MessageHeightTwitch.MessageHeightTwitch>();
 
-	public static void Init(string CharMapPath, string Channel)
+	public static int InitCharMap(string CharMapPath)
 	{
-		Instance = new MessageHeightTwitch.MessageHeightTwitch(CharMapPath, Channel);
+		try {
+			MessageHeightTwitch.MessageHeightTwitch.FillCharMap(CharMapPath);
+		} catch (Exception ex) {
+			Console.WriteLine(ex);
+			return 0;
+		}
+		return 1;
 	}
 
-	public static float CalculateMessageHeight(string Input, string Username, string DisplayName, int NumberOfBadges, IntPtr TwitchEmotes, int TwitchEmotesLen)
+	public static int InitChannel(string Channel)
 	{
-		var dict = new Dictionary<string, string>();
-		if (TwitchEmotes != null) {
-			for (int x = 0;x < TwitchEmotesLen * Marshal.SizeOf<TwitchEmote>();x += Marshal.SizeOf<TwitchEmote>()) {
-				var te = Marshal.PtrToStructure<TwitchEmote>(new IntPtr(TwitchEmotes.ToInt64() + x));
-				dict.Add(te.Name, te.Url);
-			}
+		try {
+			var instance = new MessageHeightTwitch.MessageHeightTwitch(Channel);
+			if (Instances.ContainsKey(Channel))
+				Instances[Channel] = instance;
+			else
+				Instances.Add(Channel, instance);
+		} catch (Exception ex) {
+			Console.WriteLine(ex);
+			return 0;
 		}
-		return Instance.CalculateMessageHeight(Input, Username, DisplayName, NumberOfBadges, dict);
+		return 1;
+	}
+
+	public static float CalculateMessageHeight(string Channel, string Input, string Username, string DisplayName, int NumberOfBadges, IntPtr TwitchEmotes, int TwitchEmotesLen)
+	{
+		if (!Instances.ContainsKey(Channel)) {
+			Console.WriteLine("Channel is not initialized, initialized:");
+			foreach (var chan in Instances.Keys) {
+				Console.WriteLine(chan);
+			}
+			return 0;
+		}
+
+		try {
+			var dict = new Dictionary<string, string>();
+			if (TwitchEmotes != null) {
+				for (int x = 0;x < TwitchEmotesLen * Marshal.SizeOf<TwitchEmote>();x += Marshal.SizeOf<TwitchEmote>()) {
+					var te = Marshal.PtrToStructure<TwitchEmote>(new IntPtr(TwitchEmotes.ToInt64() + x));
+					dict.Add(te.Name, te.Url);
+				}
+			}
+
+			return Instances[Channel].CalculateMessageHeight(Input, Username, DisplayName, NumberOfBadges, dict);
+		} catch (Exception ex) {
+			Console.WriteLine(ex);
+			return 0;
+		}
 	}
 }

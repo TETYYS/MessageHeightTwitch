@@ -285,7 +285,7 @@ void* hostHandle;
 unsigned int domainId;
 
 CalculateMessageHeight *fxDirect = NULL;
-extern "C" float CalculateMessageHeightDirect(const char *Input, const char *Username, const char *DisplayName, int NumberOfBadges, TwitchEmote *TwitchEmotes, int TwitchEmotesLen)
+extern "C" float CalculateMessageHeightDirect(const char *Channel, const char *Input, const char *Username, const char *DisplayName, int NumberOfBadges, TwitchEmote *TwitchEmotes, int TwitchEmotesLen)
 {
 	if (fxDirect == NULL) {
 		if ((fxDirect = CreateCalculateMessageHeightDelegate()) == NULL) {
@@ -293,7 +293,7 @@ extern "C" float CalculateMessageHeightDirect(const char *Input, const char *Use
 		}
 	}
 
-	return fxDirect(Input, Username, DisplayName, NumberOfBadges, TwitchEmotes, TwitchEmotesLen);
+	return fxDirect(Channel, Input, Username, DisplayName, NumberOfBadges, TwitchEmotes, TwitchEmotesLen);
 }
 
 extern "C" int UnloadCLRRuntime()
@@ -467,7 +467,7 @@ extern "C" int LoadCLRRuntime(
 	return exitCode;
 }
 
-extern "C" int InitMessageHeightTwitch(const char *CharMapPath, const char *Channel)
+extern "C" int InitCharMap(const char *CharMapPath)
 {
 	void *init;
 	int st = createDelegate(
@@ -475,18 +475,36 @@ extern "C" int InitMessageHeightTwitch(const char *CharMapPath, const char *Chan
 		domainId,
 		"MessageHeightTwitch",
 		"MessageHeightTwitchStatic",
-		"Init",
+		"InitCharMap",
 		&init);
 
 	if (!SUCCEEDED(st))
 	{
-		fprintf(stderr, "InitMessageHeightTwitch failed - status: 0x%08x\n", st);
-		return -1;
+		fprintf(stderr, "InitCharMap failed - status: 0x%08x\n", st);
+		return st;
 	}
 
-	((Init*)init)(CharMapPath, Channel);
+	return ((FxInitCharMap*)init)(CharMapPath);
+}
 
-	return 0;
+extern "C" int InitChannel(const char *Channel)
+{
+	void *init;
+	int st = createDelegate(
+		hostHandle,
+		domainId,
+		"MessageHeightTwitch",
+		"MessageHeightTwitchStatic",
+		"InitChannel",
+		&init);
+
+	if (!SUCCEEDED(st))
+	{
+		fprintf(stderr, "InitChannel failed - status: 0x%08x\n", st);
+		return st;
+	}
+
+	return ((FxInitChannel*)init)(Channel);
 }
 
 extern "C" CalculateMessageHeight *CreateCalculateMessageHeightDelegate()

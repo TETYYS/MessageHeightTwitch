@@ -11,7 +11,7 @@ namespace MessageHeightTwitch
 {
     public class MessageHeightTwitch
     {
-		private struct CharacterProperty
+		public struct CharacterProperty
 		{
 			public float Width;
 			public bool CharWrapping;
@@ -23,7 +23,7 @@ namespace MessageHeightTwitch
 			}
 		}
 
-		private CharacterProperty[] CharacterProperties;
+		public static CharacterProperty[] CharacterProperties;
 
 		public delegate bool Fx3rdPartyEmote(string Name, out SizeF Size);
 		private readonly Fx3rdPartyEmote BTTVGetEmote;
@@ -33,7 +33,7 @@ namespace MessageHeightTwitch
 		private readonly Func<string, bool> BTTVIsEmojiSupported;
 		private readonly Func<string, bool> FFZIsEmojiSupported;
 
-		private void FillCharMap(string CharMapPath)
+		public static void FillCharMap(string CharMapPath)
 		{
 			var charProperties = new List<CharacterProperty>();
 
@@ -64,9 +64,8 @@ namespace MessageHeightTwitch
 		private BTTVEmoteProvider BTTVEmoteProvider;
 		private TwitchEmotes TwitchEmotes;
 
-		public MessageHeightTwitch(string CharMapPath, string Channel)
+		public MessageHeightTwitch(string Channel)
 		{
-			FillCharMap(CharMapPath);
 			FFZEmoteProvider = new FFZEmoteProvider();
 			FFZEmoteProvider.Initialize(Channel).Wait();
 			BTTVEmoteProvider = new BTTVEmoteProvider();
@@ -79,9 +78,8 @@ namespace MessageHeightTwitch
 			this.FFZIsEmojiSupported = (e) => FFZEmoteProvider.IsEmojiSupported(e);
 		}
 
-		public MessageHeightTwitch(string CharMapPath, Fx3rdPartyEmote BTTVGetEmote, Fx3rdPartyEmote FFZGetEmote, Func<string, string, SizeF> TwitchGetEmote, Func<string, bool> BTTVIsEmojiSupported, Func<string, bool> FFZIsEmojiSupported)
+		public MessageHeightTwitch(Fx3rdPartyEmote BTTVGetEmote, Fx3rdPartyEmote FFZGetEmote, Func<string, string, SizeF> TwitchGetEmote, Func<string, bool> BTTVIsEmojiSupported, Func<string, bool> FFZIsEmojiSupported)
 		{
-			FillCharMap(CharMapPath);
 			this.BTTVGetEmote = BTTVGetEmote;
 			this.FFZGetEmote = FFZGetEmote;
 			this.TwitchGetEmote = TwitchGetEmote;

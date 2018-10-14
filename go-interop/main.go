@@ -7,7 +7,6 @@ import "C"
 import "fmt"
 import "unsafe"
 import "os"
-import "time"
 
 func main() {
 	
@@ -33,21 +32,34 @@ func main() {
 	
 	charMap := C.CString("../charmap.bin.gz")
 	channel := C.CString("channel")
+	channel2 := C.CString("channel2")
 	
-	res = C.InitMessageHeightTwitch(charMap, channel)
-	
+	res = C.InitCharMap(charMap)
 	C.free(unsafe.Pointer(charMap))
-	C.free(unsafe.Pointer(channel))
 	
-	if res != 0 {
-		fmt.Println("failed to init MessageHeightTwitch")
-		os.Exit(int(res))
+	if res != 1 {
+		fmt.Println("Failed to fill charmap")
+		os.Exit(1)
+	}
+	
+	res = C.InitChannel(channel)
+	
+	if res != 1 {
+		fmt.Println("Failed to load channel")
+		os.Exit(1)
+	}
+	
+	res = C.InitChannel(channel2)
+	
+	if res != 1 {
+		fmt.Println("Failed to load channel2")
+		os.Exit(1)
 	}
 	
 	input := C.CString("NaM")
 	username := C.CString("tetyys")
 	test := C.CString("test")
-	testhttp := C.CString("http://test.com/")
+	testhttp := C.CString("https://test.com/")
 	pajaDank := C.CString("pajaDank")
 	pajaDankUrl := C.CString("https://static-cdn.jtvnw.net/emoticons/v1/129570/1.0")
 	
@@ -57,22 +69,29 @@ func main() {
 	
 	pArray := unsafe.Pointer(&te[0])
 	
-	start := time.Now()
 	var height C.float
+	var height2 C.float
 	
-	for i := 0; i < 1000; i++ {
-		height = C.CalculateMessageHeightDirect(
-			input,
-			username,
-			username,
-			C.int(1),
-			((*C.TwitchEmote)(pArray)),
-			C.int(2))
-	}
+	height = C.CalculateMessageHeightDirect(
+		channel,
+		input,
+		username,
+		username,
+		C.int(1),
+		((*C.TwitchEmote)(pArray)),
+		C.int(2))
+		
+	height2 = C.CalculateMessageHeightDirect(
+		channel2,
+		input,
+		username,
+		username,
+		C.int(1),
+		((*C.TwitchEmote)(pArray)),
+		C.int(2))
 	
-	elapsed := time.Since(start)
-	
-	fmt.Println(elapsed)
+	C.free(unsafe.Pointer(channel))
+	C.free(unsafe.Pointer(channel2))
 	
 	C.free(unsafe.Pointer(input))
 	C.free(unsafe.Pointer(username))
@@ -82,4 +101,5 @@ func main() {
 	C.free(unsafe.Pointer(pajaDankUrl))
 	
 	fmt.Println(height)
+	fmt.Println(height2)
 }
