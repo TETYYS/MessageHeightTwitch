@@ -1,7 +1,7 @@
-﻿using System;
+﻿using SixLabors.Primitives;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
@@ -288,7 +288,7 @@ namespace MessageHeightTwitch
 				// Currently processing emote provider
 				EMOTE_PROVIDER curEmoteProvider;
 				// Currently processing emote size
-				SizeF emoteSz;
+				SizeF emoteSz = new SizeF(Single.MaxValue, Single.MaxValue);
 				// If current emote was BTTV stripped, this specifies last stripped char in split + 1
 				int emoteStrippedCharsToIndex = -1;
 
@@ -396,6 +396,9 @@ namespace MessageHeightTwitch
 					* If not, increase the width and height, if this is the biggest emote
 					* of current line yet.
 					*/
+
+					Debug.Assert(emoteSz.Width != Single.MaxValue);
+
 					if (Params.EmoteMargin)
 						emoteSz = new SizeF(emoteSz.Width, Math.Max(emoteSz.Height - 10, CHAR_W_MARG));
 
