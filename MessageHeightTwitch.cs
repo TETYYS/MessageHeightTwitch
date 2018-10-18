@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace MessageHeightTwitch
 {
@@ -53,7 +54,7 @@ namespace MessageHeightTwitch
 			}
 
 			CharacterProperties = charProperties.ToArray();
-
+			
 			Debug.Assert(broken);
 			Debug.Assert(CharacterProperties['A'].Width == 8);
 			Debug.Assert(CharacterProperties['@'].Width == 12.171875f);
@@ -250,7 +251,7 @@ namespace MessageHeightTwitch
 			CalculateMessageHeightParams Params)
 		{
 			// Whole chat width
-			const int CHAT_WIDTH = 339 - 20; // -20 for padding
+			const int CHAT_WIDTH = 339 - 40; // -20 for padding on both sides
 
 			// One line height - i.e. One character with margin on top and bottom
 			const int CHAR_W_MARG = 20;

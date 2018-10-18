@@ -17,12 +17,12 @@ namespace MessageHeightTwitch
 			if (!Cache.TryGetValue(Name, out ret)) {
 				Client.GetStreamAsync(
 					Url
-				).ContinueWith(
-					(res) => {
+				).ContinueWith((res) => {
+					if (!res.IsFaulted) {
 						var img = Image.Load(res.Result);
 						Cache[Name] = new SizeF(img.Width, img.Height);
-					}, TaskContinuationOptions.OnlyOnRanToCompletion
-				);
+					}
+				});
 				return new SizeF(28, 28);
 			}
 			return ret;
