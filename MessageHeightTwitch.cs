@@ -403,6 +403,10 @@ namespace MessageHeightTwitch
 					if (Params.EmoteMargin)
 						emoteSz = new SizeF(emoteSz.Width, Math.Max(emoteSz.Height - 10, CHAR_W_MARG));
 
+					/*
+					 * Images wrap to next line if line reaches the chat width, not even exceeding it (1px diff),
+					 * so >= is required here.
+					 */
 					if (cur.Width + emoteSz.Width >= CHAT_WIDTH) {
 						if (Params.LineMargin)
 							finalH += Math.Max(cur.Height, CHAR_W_MARG);
@@ -522,7 +526,11 @@ namespace MessageHeightTwitch
 						wrapReset = curChar + 1;
 					}
 
-					if (cur.Width >= CHAT_WIDTH) {
+					/*
+					 * Characters on the other hand, wrap to the next line if they EXCEED chat width,
+					 * so > is required here.
+					 */
+					if (cur.Width > CHAT_WIDTH) {
 						if (wrappedOnce || charWrapping) {
 							if (Params.LineMargin)
 								finalH += Math.Max(cur.Height, CHAR_W_MARG);
@@ -537,7 +545,13 @@ namespace MessageHeightTwitch
 								finalH += old.Height;
 							cur.Width = 0;
 							cur.Height = 0;
-							curChar = wrapReset - 1; // Compensate for next increment
+
+							/*
+							 * Special case for space when wrapping it to next line -
+							 * it gets lost and doesn't move current word to next line with itself.
+							 */
+							if (split[x][curChar] != ' ')
+								curChar = wrapReset - 1; // Compensate for next increment
 							wrappedOnce = true;
 						}
 					}
