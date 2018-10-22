@@ -193,22 +193,19 @@ namespace MessageHeightTwitch
 			/// </summary>
 			public bool AddStrippedEmoteCharsToCalc;
 
-			public static CalculateMessageHeightParams Default {
-				get {
-					var ret = new CalculateMessageHeightParams();
-					ret.NumberOfBadges = 0;
-					ret.TwitchEmotes = null;
-					ret.EmoteMargin = true;
-					ret.LineMargin = true;
-					ret.WholeMargin = true;
-					ret.EmojiReplaceMode = EMOTE_PROVIDER.FFZ;
-					ret.LocalizedNameMode = LOCALIZED_NAME_MODE.USERNAME_DISPLAY_NAME;
-					ret.IgnoreCharWrappingRules = false;
-					ret.ApplyBTTVStripToFFZ = true;
-					ret.AddStrippedEmoteCharsToCalc = true;
-					return ret;
-				}
-			}
+			public static CalculateMessageHeightParams Default => new CalculateMessageHeightParams
+			{
+				NumberOfBadges = 0,
+				TwitchEmotes = null,
+				EmoteMargin = true,
+				LineMargin = true,
+				WholeMargin = true,
+				EmojiReplaceMode = EMOTE_PROVIDER.FFZ,
+				LocalizedNameMode = LOCALIZED_NAME_MODE.USERNAME_DISPLAY_NAME,
+				IgnoreCharWrappingRules = false,
+				ApplyBTTVStripToFFZ = true,
+				AddStrippedEmoteCharsToCalc = true,
+			};
 		}
 
 		/// <summary>
