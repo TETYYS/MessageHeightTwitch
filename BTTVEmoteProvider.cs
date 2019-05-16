@@ -54,8 +54,10 @@ namespace MessageHeightTwitch
 			void addToList(string Name, Stream EmoteStream)
 			{
 				var img = Image.Load(EmoteStream);
-				lock (EmoteCache) {
-					EmoteCache.Add(Name, new SizeF(img.Width, img.Height));
+				if (!EmoteCache.ContainsKey(Name)) {
+					lock (EmoteCache) {
+						EmoteCache.Add(Name, new SizeF(img.Width, img.Height));
+					}
 				}
 			}
 
