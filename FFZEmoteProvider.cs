@@ -57,7 +57,9 @@ namespace MessageHeightTwitch
 
 			void addToList(string Name, int x, int y)
 			{
-				EmoteCache.Add(Name, new SizeF(x, y));
+				if (!EmoteCache.ContainsKey(Name)) {
+					EmoteCache.Add(Name, new SizeF(x, y));
+				}
 			}
 
 			json.sets.Values.First().emoticons.ForEach(x => addToList(x.name, x.width, x.height));
