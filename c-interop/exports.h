@@ -6,7 +6,7 @@ typedef struct _TwitchEmote
 
 typedef float(CalculateMessageHeight)(const char *Channel, const char *Input, const char *Username, const char *DisplayName, int NumberOfBadges, TwitchEmote *TwitchEmotes, int TwitchEmotesLen);
 typedef int(FxInitCharMap)(const char *CharMapPath);
-typedef int(FxInitChannel)(const char *Channel, const char* ChannelId, intTimeoutMs);
+typedef int(FxInitChannel)(const char *Channel, const char* ChannelId, int TimeoutMs);
 
 #ifdef __cplusplus
 extern "C" {
