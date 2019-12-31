@@ -22,10 +22,10 @@ class MessageHeightTwitchStatic
 		return 1;
 	}
 
-	public static int InitChannel(string Channel)
+	public static int InitChannel(string Channel, string ChannelId, int TimeoutMs)
 	{
 		try {
-			var instance = new MessageHeightTwitch.MessageHeightTwitch(Channel);
+			var instance = new MessageHeightTwitch.MessageHeightTwitch(Channel, ChannelId, TimeoutMs);
 			if (Instances.ContainsKey(Channel))
 				Instances[Channel] = instance;
 			else

@@ -11,8 +11,8 @@ import "os"
 func main() {
 	
 	clr1 := C.CString("/home/user/prog/MessageHeightTwitch/go-interop/main")
-	clr2 := C.CString("/home/user/.dotnet/shared/Microsoft.NETCore.App/2.1.4/")
-	clr3 := C.CString("/home/user/prog/MessageHeightTwitch/bin/Debug/netstandard2.0/MessageHeightTwitch.dll")
+	clr2 := C.CString("/home/user/.dotnet/shared/Microsoft.NETCore.App/3.1.0/")
+	clr3 := C.CString("/home/user/prog/MessageHeightTwitch/bin/Debug/netstandard2.1/MessageHeightTwitch.dll")
 	
 	var res C.int
 	
@@ -32,7 +32,9 @@ func main() {
 	
 	charMap := C.CString("../charmap.bin.gz")
 	channel := C.CString("channel")
+	channelId := C.CString("123")
 	channel2 := C.CString("channel2")
+	channel2Id := C.CString("321")
 	
 	res = C.InitCharMap(charMap)
 	C.free(unsafe.Pointer(charMap))
@@ -42,14 +44,14 @@ func main() {
 		os.Exit(1)
 	}
 	
-	res = C.InitChannel(channel)
+	res = C.InitChannel(channel, channelId, 30000)
 	
 	if res != 1 {
 		fmt.Println("Failed to load channel")
 		os.Exit(1)
 	}
 	
-	res = C.InitChannel(channel2)
+	res = C.InitChannel(channel2, channel2Id, 30000)
 	
 	if res != 1 {
 		fmt.Println("Failed to load channel2")

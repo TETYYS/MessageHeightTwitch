@@ -487,7 +487,7 @@ extern "C" int InitCharMap(const char *CharMapPath)
 	return ((FxInitCharMap*)init)(CharMapPath);
 }
 
-extern "C" int InitChannel(const char *Channel)
+extern "C" int InitChannel(const char *Channel, const char* ChannelId, int TimeoutMs)
 {
 	void *init;
 	int st = createDelegate(
@@ -504,7 +504,7 @@ extern "C" int InitChannel(const char *Channel)
 		return st;
 	}
 
-	return ((FxInitChannel*)init)(Channel);
+	return ((FxInitChannel*)init)(Channel, ChannelId, TimeoutMs);
 }
 
 extern "C" CalculateMessageHeight *CreateCalculateMessageHeightDelegate()

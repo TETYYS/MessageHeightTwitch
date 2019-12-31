@@ -1,11 +1,12 @@
-﻿using Newtonsoft.Json;
-using SixLabors.ImageSharp;
+﻿using SixLabors.ImageSharp;
 using SixLabors.Primitives;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MessageHeightTwitch
@@ -18,55 +19,61 @@ namespace MessageHeightTwitch
 
 		private class BTTVEmote
 		{
-			public string id;
-			public string code;
-			public string channel;
-			public string imageType;
+			public string id { get; set; }
+			public string code { get; set; }
+			public string imageType { get; set; }
+
+			public BTTVEmote() { }
 		}
 
 		private class BTTVResponse
 		{
-			public int status;
-			public string urlTemplate;
-			public List<BTTVEmote> emotes;
+			public string id { get; set; }
+			public IEnumerable<string> bots { get; set; }
+			public IEnumerable<BTTVEmote> channelEmotes { get; set; }
+			public IEnumerable<BTTVEmote> sharedEmotes { get; set; }
+
+			public BTTVResponse() { }
 		}
 
 		private class EmojilibEmoji
 		{
-			public string[] keywords;
-			public string @char;
-			public bool fitzpatrick_scale;
-			public string category;
+			public string[] keywords { get; set; }
+			public string @char { get; set; }
+			public bool fitzpatrick_scale { get; set; }
+			public string category { get; set; }
+
+			public EmojilibEmoji() { }
 		}
 
 		public bool TryGetEmote(string Name, out SizeF Size) => EmoteCache.TryGetValue(Name, out Size);
 
-		public async Task Initialize(string Channel)
+		static readonly string BTTVUrlTemplate = "https://cdn.betterttv.net/emote/{{id}}/{{image}}";
+
+		public async Task Initialize(string ChannelId, CancellationToken Token)
 		{
 			var emoteFetches = new List<Task>();
 
-			var rawJson = await Client.GetAsync("https://api.betterttv.net/2/emotes");
-			var json = JsonConvert.DeserializeObject<BTTVResponse>(await rawJson.Content.ReadAsStringAsync());
-
-			if (json.status != 200)
-				throw new Exception("BTTV returned " + json.status + " as a status code");
+			var rawJson = await Client.GetAsync("https://api.betterttv.net/3/cached/emotes/global", Token);
+			rawJson.EnsureSuccessStatusCode();
+			
+			var globalEmotes = await JsonSerializer.DeserializeAsync<IEnumerable<BTTVEmote>>(await rawJson.Content.ReadAsStreamAsync());
 
 			void addToList(string Name, Stream EmoteStream)
 			{
 				var img = Image.Load(EmoteStream);
 				lock (EmoteCache) {
-					if (!EmoteCache.ContainsKey(Name)) {
+					if (!EmoteCache.ContainsKey(Name))
 						EmoteCache.Add(Name, new SizeF(img.Width, img.Height));
-					}
 				}
 			}
 
-			void fetchAllForList(List<BTTVEmote> Emotes)
+			void fetchAllForList(IEnumerable<BTTVEmote> Emotes)
 			{
 				foreach (var emote in Emotes) {
 					emoteFetches.Add(
 						Client.GetStreamAsync(
-							"https:" + json.urlTemplate.Replace("{{id}}", emote.id).Replace("{{image}}", "1x")
+							BTTVUrlTemplate.Replace("{{id}}", emote.id).Replace("{{image}}", "1x")
 						).ContinueWith(
 							(res) => addToList(emote.code, res.Result), TaskContinuationOptions.OnlyOnRanToCompletion
 						)
@@ -74,35 +81,39 @@ namespace MessageHeightTwitch
 				}
 			}
 
-			fetchAllForList(json.emotes);
+			fetchAllForList(globalEmotes);
 
-			rawJson = await Client.GetAsync("https://api.betterttv.net/2/channels/" + Channel);
-			json = JsonConvert.DeserializeObject<BTTVResponse>(await rawJson.Content.ReadAsStringAsync());
+			rawJson = await Client.GetAsync("https://api.betterttv.net/3/cached/users/twitch/" + ChannelId, Token);
+			var rawContents = await rawJson.Content.ReadAsStringAsync();
+			bool noUser = false;
 
-			if (json.status != 200)
-				throw new Exception("BTTV returned " + json.status + " as a status code (2)");
+			try {
+				var error = JsonSerializer.Deserialize<Dictionary<string, string>>(rawContents);
+				if (error["message"] == "user not found") {
+					noUser = true;
+				}
+			} catch { }
 
-			fetchAllForList(json.emotes);
+			if (!noUser) {
+				var channelEmotes = JsonSerializer.Deserialize<BTTVResponse>(rawContents);
+				fetchAllForList(channelEmotes.channelEmotes.Union(channelEmotes.sharedEmotes));
+			}
 
-			rawJson = await Client.GetAsync("https://raw.githubusercontent.com/muan/emojilib/master/emojis.json");
-			var emojilibJson = JsonConvert.DeserializeObject<Dictionary<string, EmojilibEmoji>>(await rawJson.Content.ReadAsStringAsync());
+			rawJson = await Client.GetAsync("https://raw.githubusercontent.com/night/BetterTTV/master/src/utils/emoji-blacklist.json", Token);
+			var emojiBlacklist = JsonSerializer.Deserialize<List<string>>(await rawJson.Content.ReadAsStringAsync(), new JsonSerializerOptions() {
+				ReadCommentHandling = JsonCommentHandling.Skip
+			});
 
-			SupportedEmojis = new HashSet<string>(emojilibJson.Select(x => x.Value.@char));
+			rawJson = await Client.GetAsync("https://raw.githubusercontent.com/muan/emojilib/master/emojis.json", Token);
+			var emojis = JsonSerializer.Deserialize<Dictionary<string, EmojilibEmoji>>(await rawJson.Content.ReadAsStringAsync());
 
-			rawJson = await Client.GetAsync("https://raw.githubusercontent.com/night/BetterTTV/master/src/utils/emoji-blacklist.json");
-			var emojiblacklistJson = JsonConvert.DeserializeObject<List<string>>(await rawJson.Content.ReadAsStringAsync());
-
-			UnsupportedEmojis = new HashSet<string>(emojiblacklistJson);
+			SupportedEmojis = new HashSet<string>(emojis.Select(x => x.Value.@char).Where(x => !emojiBlacklist.Contains(x)));
 
 			await Task.WhenAll(emoteFetches);
 		}
 
-		private HashSet<string> UnsupportedEmojis;
 		private HashSet<string> SupportedEmojis;
 
-		public bool IsEmojiSupported(string Emoji)
-		{
-			return !UnsupportedEmojis.Contains(Emoji) && SupportedEmojis.Contains(Emoji);
-		}
+		public bool IsEmojiSupported(string Emoji) => SupportedEmojis.Contains(Emoji);
 	}
 }

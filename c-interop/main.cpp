@@ -5,7 +5,7 @@
 int main(int argc, char **argv)
 {
 	int st;
-	if ((st = LoadCLRRuntime("/home/user/prog/MessageHeightTwitch/c-interop/a.out", "/home/user/.dotnet/shared/Microsoft.NETCore.App/2.1.4/", "/home/user/prog/MessageHeightTwitch/bin/Debug/netstandard2.0/MessageHeightTwitch.dll")) != 0) {
+	if ((st = LoadCLRRuntime("/home/user/prog/MessageHeightTwitch/c-interop/a.out", "/home/user/.dotnet/shared/Microsoft.NETCore.App/3.1.0/", "/home/user/prog/MessageHeightTwitch/bin/Debug/netstandard2.1/MessageHeightTwitch.dll")) != 0) {
 		printf("failed to load CLR runtime");
 		return st;
 	}

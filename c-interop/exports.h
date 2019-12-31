@@ -6,7 +6,7 @@ typedef struct _TwitchEmote
 
 typedef float(CalculateMessageHeight)(const char *Channel, const char *Input, const char *Username, const char *DisplayName, int NumberOfBadges, TwitchEmote *TwitchEmotes, int TwitchEmotesLen);
 typedef int(FxInitCharMap)(const char *CharMapPath);
-typedef int(FxInitChannel)(const char *Channel);
+typedef int(FxInitChannel)(const char *Channel, const char* ChannelId, intTimeoutMs);
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,7 +19,7 @@ extern "C" {
 	extern CalculateMessageHeight *CreateCalculateMessageHeightDelegate();
 	extern float CalculateMessageHeightDirect(const char *Channel, const char *Input, const char *Username, const char *DisplayName, int NumberOfBadges, TwitchEmote *TwitchEmotes, int TwitchEmotesLen);
 	extern int InitCharMap(const char *CharMapPath);
-	extern int InitChannel(const char *Channel);
+	extern int InitChannel(const char *Channel, const char* ChannelId, int TimeoutMs);
 #ifdef __cplusplus
 }
 #endif

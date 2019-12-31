@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
 using System.Linq;
+using System.Threading;
 
 namespace MessageHeightTwitch
 {
@@ -64,12 +65,13 @@ namespace MessageHeightTwitch
 		private BTTVEmoteProvider BTTVEmoteProvider;
 		private TwitchEmotes TwitchEmotes;
 
-		public MessageHeightTwitch(string Channel)
+		public MessageHeightTwitch(string Channel, string ChannelId, int TimeoutMs)
 		{
+			var cts = new CancellationTokenSource(TimeoutMs);
 			FFZEmoteProvider = new FFZEmoteProvider();
-			FFZEmoteProvider.Initialize(Channel).Wait();
+			FFZEmoteProvider.Initialize(Channel, cts.Token).GetAwaiter().GetResult();
 			BTTVEmoteProvider = new BTTVEmoteProvider();
-			BTTVEmoteProvider.Initialize(Channel).Wait();
+			BTTVEmoteProvider.Initialize(ChannelId, cts.Token).GetAwaiter().GetResult();
 			TwitchEmotes = new TwitchEmotes();
 			this.BTTVGetEmote = BTTVEmoteProvider.TryGetEmote;
 			this.FFZGetEmote = FFZEmoteProvider.TryGetEmote;
@@ -511,12 +513,18 @@ namespace MessageHeightTwitch
 						iChar = Char.ConvertToUtf32(split[x][curChar], split[x][curChar + 1]);
 						curChar++;
 					}
-					var props = CharacterProperties[iChar];
+					bool charWrapping;
+					if (iChar < CharacterProperties.Length) {
+						var props = CharacterProperties[iChar];
+						sz = new SizeF(props.Width, 14);
+						charWrapping = !Params.IgnoreCharWrappingRules && props.CharWrapping;
+					} else {
+						sz = new SizeF(9, 14);
+						charWrapping = !Params.IgnoreCharWrappingRules;
+					}
 
-					sz = new SizeF(props.Width, 9);
 					cur.Width += sz.Width;
 					cur.Height = Math.Max(cur.Height, sz.Height);
-					bool charWrapping = !Params.IgnoreCharWrappingRules && props.CharWrapping;
 
 					if (charWrapping) {
 						wrappedOnce = false;
