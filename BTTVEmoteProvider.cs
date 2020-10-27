@@ -99,8 +99,12 @@ namespace MessageHeightTwitch
 				fetchAllForList(channelEmotes.channelEmotes.Union(channelEmotes.sharedEmotes));
 			}
 
-			rawJson = await Client.GetAsync("https://raw.githubusercontent.com/night/betterttv/4f1239b590b914376c035ad7eb37847e553faf3d/src/utils/emoji-blacklist.json", Token);
-			var emojiBlacklist = JsonSerializer.Deserialize<List<string>>(await rawJson.Content.ReadAsStringAsync(), new JsonSerializerOptions() {
+			var rawJs = await Client.GetAsync("https://raw.githubusercontent.com/night/betterttv/master/src/utils/emoji-blacklist.js", Token);
+			rawContents = (await rawJs.Content.ReadAsStringAsync())
+				.Replace("module.exports = ", "")
+				.Replace(";", "")
+				.Replace("'", "\"");
+			var emojiBlacklist = JsonSerializer.Deserialize<List<string>>(rawContents, new JsonSerializerOptions() {
 				ReadCommentHandling = JsonCommentHandling.Skip
 			});
 
