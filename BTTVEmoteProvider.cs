@@ -108,7 +108,7 @@ namespace MessageHeightTwitch
 				ReadCommentHandling = JsonCommentHandling.Skip
 			});
 
-			rawJson = await Client.GetAsync("https://raw.githubusercontent.com/muan/emojilib/master/emojis.json", Token);
+			rawJson = await Client.GetAsync("https://raw.githubusercontent.com/muan/emojilib/v2.4.0/emojis.json", Token);
 			var emojis = JsonSerializer.Deserialize<Dictionary<string, EmojilibEmoji>>(await rawJson.Content.ReadAsStringAsync());
 
 			SupportedEmojis = new HashSet<string>(emojis.Select(x => x.Value.@char).Where(x => !emojiBlacklist.Contains(x)));
