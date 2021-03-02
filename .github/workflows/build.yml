@@ -1,0 +1,26 @@
+---
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        dotnet: [ '3.0.x', '3.1.x', '5.0.x' ]
+
+    name: Build project on .NET ${{ matrix.dotnet }}
+    steps:
+      - uses: actions/checkout@v2.3.4
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v1.7.2
+        with:
+          dotnet-version: ${{ matrix.dotnet }}
+      - run: dotnet build .
