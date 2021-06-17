@@ -1,12 +1,11 @@
-﻿using SixLabors.Primitives;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
-using System.Linq;
 using System.Threading;
+using SixLabors.ImageSharp;
 
 namespace MessageHeightTwitch
 {

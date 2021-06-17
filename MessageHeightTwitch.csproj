@@ -6,14 +6,19 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="ImageSharp\**" />
     <Compile Remove="Tests\**" />
+    <EmbeddedResource Remove="ImageSharp\**" />
     <EmbeddedResource Remove="Tests\**" />
+    <None Remove="ImageSharp\**" />
     <None Remove="Tests\**" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0005" />
-    <PackageReference Include="System.Memory" Version="4.5.3" />
+    <PackageReference Include="System.Memory" Version="4.5.4" />
     <PackageReference Include="System.Text.Json" Version="4.7.0" />
     <PackageReference Include="Unicode.net" Version="0.1.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="ImageSharp\src\ImageSharp\ImageSharp.csproj" />
   </ItemGroup>
 </Project>
