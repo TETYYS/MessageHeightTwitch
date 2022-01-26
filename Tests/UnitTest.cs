@@ -151,11 +151,23 @@ namespace Tests
 				KeyValuePair.Create(Tuple.Create<string, string, string, int, Dictionary<string, string>>(
 					"Chat nuke ANELE (mod only) 2", "TETYYS", "﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽﷽﷽ NaM ﷽ NaM", 1, null), 1900f
 				),
-				KeyValuePair.Create(Tuple.Create<string, string, string, int, Dictionary<string, string>>("Arabic combining characters", "TETYYS", "بابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابا", 1, null), 110.89f)
+				/*KeyValuePair.Create(Tuple.Create<string, string, string, int, Dictionary<string, string>>("Arabic combining characters", "TETYYS", "بابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابابا", 1, null), 110.89f),*/
+				KeyValuePair.Create(Tuple.Create<string, string, string, int, Dictionary<string, string>>(
+					"7TV wide", "TETYYS", "AlienGathering AlienGathering AlienGathering", 3, null), 50f // actually 51.45f, but of course 7TV is different from FFZ in some way
+				),
+				KeyValuePair.Create(Tuple.Create<string, string, string, int, Dictionary<string, string>>(
+					"7TV regular", "TETYYS", "catKISS catKISS catKISS catKISS catKISS catKISS catKISS catKISS catKISS catKISS catKISS catKISS catKISS catKISS catKISS catKISS", 3, null), 76f // actually 77.36f
+				),
+				KeyValuePair.Create(Tuple.Create<string, string, string, int, Dictionary<string, string>>(
+					"7TV with zero width", "TETYYS", "catKISS Love catKISS Love catKISS Love catKISS Love catKISS Love catKISS Love catKISS Love catKISS Love catKISS Love catKISS Love catKISS Love catKISS Love catKISS Love", 3, null), 54f // actually 54.91f
+				),
+				KeyValuePair.Create(Tuple.Create<string, string, string, int, Dictionary<string, string>>(
+					"7TV with zero width chaos", "TETYYS", "😂 Love a NaN Love Nam Love AlienGathering Love Love aa Love 👨 Love Love 😂 Love a NaN Love Nam Love AlienGathering Love Love aa Love 👨 Love Love 😂 Love a NaN Love Nam Love AlienGathering Love Love aa Love 👨 Love Love", 3, null), 98f // actually 119.81f but ugh
+				),
 			};
 
 			MessageHeightTwitch.MessageHeightTwitch.FillCharMap("charmap.bin.gz");
-			var mht = new MessageHeightTwitch.MessageHeightTwitch("tetyys", "36175310", 99999999);
+			var mht = new MessageHeightTwitch.MessageHeightTwitch("tetyys", "36175310", 99999999, true);
 
 			foreach (var test in tests) {
 				var height = mht.CalculateMessageHeight(test.Key.Item3, test.Key.Item2, test.Key.Item2, test.Key.Item4, test.Key.Item5);

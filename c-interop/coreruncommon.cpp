@@ -507,6 +507,26 @@ extern "C" int InitChannel(const char *Channel, const char* ChannelId, int Timeo
 	return ((FxInitChannel*)init)(Channel, ChannelId, TimeoutMs);
 }
 
+extern "C" int InitChannel2(const char *Channel, const char* ChannelId, int TimeoutMs, bool Enable7TVEmotes)
+{
+	void *init;
+	int st = createDelegate(
+		hostHandle,
+		domainId,
+		"MessageHeightTwitch",
+		"MessageHeightTwitchStatic",
+		"InitChannel2",
+		&init);
+
+	if (!SUCCEEDED(st))
+	{
+		fprintf(stderr, "InitChannel failed - status: 0x%08x\n", st);
+		return st;
+	}
+
+	return ((FxInitChannel2*)init)(Channel, ChannelId, TimeoutMs, Enable7TVEmotes);
+}
+
 extern "C" CalculateMessageHeight *CreateCalculateMessageHeightDelegate()
 {
 	void *calc;

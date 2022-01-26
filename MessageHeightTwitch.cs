@@ -28,6 +28,7 @@ namespace MessageHeightTwitch
 		public delegate bool Fx3rdPartyEmote(string Name, out SizeF Size);
 		private readonly Fx3rdPartyEmote BTTVGetEmote;
 		private readonly Fx3rdPartyEmote FFZGetEmote;
+		private readonly Fx3rdPartyEmote SevenTVGetEmote;
 		private readonly Func<string, string, SizeF> TwitchGetEmote;
 
 		private readonly Func<string, bool> BTTVIsEmojiSupported;
@@ -60,18 +61,24 @@ namespace MessageHeightTwitch
 			Debug.Assert(CharacterProperties['@'].Width == 12.171875f);
 		}
 
+		private SevenTVEmoteProvider SevenTVEmoteProvider;
 		private FFZEmoteProvider FFZEmoteProvider;
 		private BTTVEmoteProvider BTTVEmoteProvider;
 		private TwitchEmotes TwitchEmotes;
 
-		public MessageHeightTwitch(string Channel, string ChannelId, int TimeoutMs)
+		public MessageHeightTwitch(string Channel, string ChannelId, int TimeoutMs, bool Enable7TVEmotes)
 		{
 			var cts = new CancellationTokenSource(TimeoutMs);
 			FFZEmoteProvider = new FFZEmoteProvider();
 			FFZEmoteProvider.Initialize(Channel, cts.Token).GetAwaiter().GetResult();
 			BTTVEmoteProvider = new BTTVEmoteProvider();
 			BTTVEmoteProvider.Initialize(ChannelId, cts.Token).GetAwaiter().GetResult();
+			if (Enable7TVEmotes) {
+				SevenTVEmoteProvider = new SevenTVEmoteProvider();
+				SevenTVEmoteProvider.Initialize(ChannelId, cts.Token).GetAwaiter().GetResult();
+			}
 			TwitchEmotes = new TwitchEmotes();
+			this.SevenTVGetEmote = SevenTVEmoteProvider.TryGetEmote;
 			this.BTTVGetEmote = BTTVEmoteProvider.TryGetEmote;
 			this.FFZGetEmote = FFZEmoteProvider.TryGetEmote;
 			this.TwitchGetEmote = TwitchEmotes.GetEmote;
@@ -79,8 +86,24 @@ namespace MessageHeightTwitch
 			this.FFZIsEmojiSupported = (e) => FFZEmoteProvider.IsEmojiSupported(e);
 		}
 
+		public MessageHeightTwitch(string Channel, string ChannelId, int TimeoutMs)
+			: this(Channel, ChannelId, TimeoutMs, false)
+		{
+		}
+
 		public MessageHeightTwitch(Fx3rdPartyEmote BTTVGetEmote, Fx3rdPartyEmote FFZGetEmote, Func<string, string, SizeF> TwitchGetEmote, Func<string, bool> BTTVIsEmojiSupported, Func<string, bool> FFZIsEmojiSupported)
 		{
+			this.SevenTVGetEmote = (string __, out SizeF _) => { _ = default; return false; };
+			this.BTTVGetEmote = BTTVGetEmote;
+			this.FFZGetEmote = FFZGetEmote;
+			this.TwitchGetEmote = TwitchGetEmote;
+			this.BTTVIsEmojiSupported = BTTVIsEmojiSupported;
+			this.FFZIsEmojiSupported = FFZIsEmojiSupported;
+		}
+
+		public MessageHeightTwitch(Fx3rdPartyEmote SevenTVGetEmote, Fx3rdPartyEmote BTTVGetEmote, Fx3rdPartyEmote FFZGetEmote, Func<string, string, SizeF> TwitchGetEmote, Func<string, bool> BTTVIsEmojiSupported, Func<string, bool> FFZIsEmojiSupported)
+		{
+			this.SevenTVGetEmote = SevenTVGetEmote;
 			this.BTTVGetEmote = BTTVGetEmote;
 			this.FFZGetEmote = FFZGetEmote;
 			this.TwitchGetEmote = TwitchGetEmote;
@@ -275,6 +298,7 @@ namespace MessageHeightTwitch
 			float finalH = 0; // Final height
 			SizeF cur = new SizeF(); // Current line size
 			SizeF sz; // Current charater size
+			string prevEmote = null;
 
 			// Assuming all badges are smaller than the whole chat width
 			cur.Width += Params.NumberOfBadges * 21.0f;
@@ -327,17 +351,20 @@ namespace MessageHeightTwitch
 
 							// Try get FFZ emote
 							if (!FFZGetEmote(curEmoteName, out emoteSz)) {
-								if (Params.TwitchEmotes == null)
-									return false;
+								// Try get 7TV emote, apply same behavior as FFZ
+								if (!SevenTVGetEmote(curEmoteName, out emoteSz)) {
+									if (Params.TwitchEmotes == null)
+										return false;
 
-								// Try get channel sub emote (passed to this method by chat parser)
-								curEmoteProvider = EMOTE_PROVIDER.NONE;
-								string url;
-								if (Params.TwitchEmotes.TryGetValue(curEmoteName, out url)) {
-									emoteSz = TwitchGetEmote(curEmoteName, url);
-									return true;
+									// Try get channel sub emote (passed to this method by chat parser)
+									curEmoteProvider = EMOTE_PROVIDER.NONE;
+									string url;
+									if (Params.TwitchEmotes.TryGetValue(curEmoteName, out url)) {
+										emoteSz = TwitchGetEmote(curEmoteName, url);
+										return true;
+									}
+									return false;
 								}
-								return false;
 							}
 						}
 						return true;
@@ -398,7 +425,20 @@ namespace MessageHeightTwitch
 
 					Debug.Assert(emoteSz.Width != Single.MaxValue);
 
-					if (Params.EmoteMargin)
+					if (emoteSz.Width < 0) {
+						// Zero width emote
+						if (prevEmote != null) {
+							// - space size
+							emoteSz = new SizeF(-CharacterProperties[0x20].Width, 0);
+						} else {
+							// Treat as regular emote
+							if (Params.EmoteMargin)
+								emoteSz = new SizeF(-emoteSz.Width, Math.Max(-emoteSz.Height - 10, CHAR_W_MARG));
+							else
+								emoteSz = new SizeF(-emoteSz.Width, -emoteSz.Height);
+						}
+
+					} else if (Params.EmoteMargin)
 						emoteSz = new SizeF(emoteSz.Width, Math.Max(emoteSz.Height - 10, CHAR_W_MARG));
 
 					/*
@@ -443,6 +483,8 @@ namespace MessageHeightTwitch
 						} else
 							curChar += curEmoteName.Length;
 					}
+
+					prevEmote = curEmoteName;
 					continue;
 				}
 
@@ -492,6 +534,11 @@ namespace MessageHeightTwitch
 				bool wrappedOnce = false;
 				int wrapReset = curChar;
 				emojiMatch = EmojiRegex.Match(split[x].Substring(curChar));
+
+				// Reset previous emote if we have something else
+				if (split[x].Substring(curChar) != " ")
+					prevEmote = null;
+
 				for (int oldCurChar = curChar;curChar < split[x].Length;curChar++) {
 					if (emojiMatch.Success && emojiMatch.Index == curChar - oldCurChar) {
 						if (!FFZIsEmojiSupported(split[x].Substring(curChar, emojiMatch.Length)) &&
