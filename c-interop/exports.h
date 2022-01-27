@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 typedef struct _TwitchEmote
 {
 	const char *Name;
