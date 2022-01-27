@@ -76,9 +76,11 @@ namespace MessageHeightTwitch
 			if (Enable7TVEmotes) {
 				SevenTVEmoteProvider = new SevenTVEmoteProvider();
 				SevenTVEmoteProvider.Initialize(ChannelId, cts.Token).GetAwaiter().GetResult();
+				SevenTVGetEmote = SevenTVEmoteProvider.TryGetEmote;
+			} else {
+				SevenTVGetEmote = (string __, out SizeF _) => { _ = default; return false; };
 			}
 			TwitchEmotes = new TwitchEmotes();
-			this.SevenTVGetEmote = SevenTVEmoteProvider.TryGetEmote;
 			this.BTTVGetEmote = BTTVEmoteProvider.TryGetEmote;
 			this.FFZGetEmote = FFZEmoteProvider.TryGetEmote;
 			this.TwitchGetEmote = TwitchEmotes.GetEmote;
