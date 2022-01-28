@@ -26,9 +26,9 @@ namespace MessageHeightTwitch
 		public static CharacterProperty[] CharacterProperties;
 
 		public delegate bool Fx3rdPartyEmote(string Name, out SizeF Size);
-		private readonly Fx3rdPartyEmote BTTVGetEmote;
-		private readonly Fx3rdPartyEmote FFZGetEmote;
-		private readonly Fx3rdPartyEmote SevenTVGetEmote;
+		private readonly Fx3rdPartyEmote BTTVGetEmote = (string __, out SizeF _) => { _ = default; return false; };
+		private readonly Fx3rdPartyEmote FFZGetEmote = (string __, out SizeF _) => { _ = default; return false; };
+		private readonly Fx3rdPartyEmote SevenTVGetEmote = (string __, out SizeF _) => { _ = default; return false; };
 		private readonly Func<string, string, SizeF> TwitchGetEmote;
 
 		private readonly Func<string, bool> BTTVIsEmojiSupported;
@@ -70,19 +70,29 @@ namespace MessageHeightTwitch
 		{
 			var cts = new CancellationTokenSource(TimeoutMs);
 			FFZEmoteProvider = new FFZEmoteProvider();
-			FFZEmoteProvider.Initialize(Channel, cts.Token).GetAwaiter().GetResult();
+			try {
+				FFZEmoteProvider.Initialize(Channel, cts.Token).GetAwaiter().GetResult();
+				this.FFZGetEmote = FFZEmoteProvider.TryGetEmote;
+			} catch (Exception ex) {
+				Console.WriteLine("Failed to initialize FFZ: " + ex.ToString());
+			}
 			BTTVEmoteProvider = new BTTVEmoteProvider();
-			BTTVEmoteProvider.Initialize(ChannelId, cts.Token).GetAwaiter().GetResult();
+			try {
+				BTTVEmoteProvider.Initialize(ChannelId, cts.Token).GetAwaiter().GetResult();
+				this.BTTVGetEmote = BTTVEmoteProvider.TryGetEmote;
+			} catch (Exception ex) {
+				Console.WriteLine("Failed to initialize BTTV: " + ex.ToString());
+			}
 			if (Enable7TVEmotes) {
 				SevenTVEmoteProvider = new SevenTVEmoteProvider();
-				SevenTVEmoteProvider.Initialize(ChannelId, cts.Token).GetAwaiter().GetResult();
-				SevenTVGetEmote = SevenTVEmoteProvider.TryGetEmote;
-			} else {
-				SevenTVGetEmote = (string __, out SizeF _) => { _ = default; return false; };
+				try {
+					SevenTVEmoteProvider.Initialize(ChannelId, cts.Token).GetAwaiter().GetResult();
+					SevenTVGetEmote = SevenTVEmoteProvider.TryGetEmote;
+				} catch (Exception ex) {
+					Console.WriteLine("Failed to initialize 7TV: " + ex.ToString());
+				}
 			}
 			TwitchEmotes = new TwitchEmotes();
-			this.BTTVGetEmote = BTTVEmoteProvider.TryGetEmote;
-			this.FFZGetEmote = FFZEmoteProvider.TryGetEmote;
 			this.TwitchGetEmote = TwitchEmotes.GetEmote;
 			this.BTTVIsEmojiSupported = (e) => BTTVEmoteProvider.IsEmojiSupported(e);
 			this.FFZIsEmojiSupported = (e) => FFZEmoteProvider.IsEmojiSupported(e);
