@@ -55,7 +55,7 @@ namespace MessageHeightTwitch
 		public async Task Initialize(string ChannelID, CancellationToken Token)
 		{
 			var rawJson = await Client.GetAsync("https://7tv.io/v3/emote-sets/global", Token);
-			var emotes = JsonSerializer.Deserialize<SevenTVGlobalEmotes>(await rawJson.Content.ReadAsStringAsync()).emotes;
+			var emotes = (await JsonSerializer.DeserializeAsync<SevenTVGlobalEmotes>(await rawJson.Content.ReadAsStreamAsync(), cancellationToken: Token)).emotes;
 
 			void addToList(SevenTVEmoticon emote)
 			{
