@@ -1,7 +1,5 @@
-﻿using NeoSmart.Unicode;
-using SixLabors.ImageSharp;
+﻿using SixLabors.ImageSharp;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
@@ -16,42 +14,71 @@ namespace MessageHeightTwitch
 
 		class SevenTVEmoticon
 		{
+			internal class SevenTVEmoticonData
+			{
+				internal class SevenTVEmoticonHost
+				{
+					internal class SevenTVEmoticonFile
+					{
+						public int width { get; set; }
+						public int height { get; set; }
+					}
+					
+					public List<SevenTVEmoticonFile> files { get; set; }
+				}
+				
+				public SevenTVEmoticonHost host { get; set; }
+			}
+			
 			public string name { get; set; }
-			public int visibility { get; set; }
-			public int[] width { get; set; }
-			public int[] height { get; set; }
-
-			public SevenTVEmoticon() { }
+			public int flags { get; set; }
+			public SevenTVEmoticonData data { get; set; }
 		}
 
+		private class SevenTVGlobalEmotes
+		{
+			public List<SevenTVEmoticon> emotes { get; set; }
+		}
+		
+		private class SevenTVUserEmotes
+		{
+			internal class SevenTVEmoteSet
+			{
+				public List<SevenTVEmoticon> emotes { get; set; }
+			}
+			
+			public SevenTVEmoteSet emote_set { get; set; }
+		}
+		
 		public bool TryGetEmote(string Name, out SizeF Size) => EmoteCache.TryGetValue(Name, out Size);
 
 		public async Task Initialize(string ChannelID, CancellationToken Token)
 		{
-			var rawJson = await Client.GetAsync("https://api.7tv.app/v2/emotes/global", Token);
-			var json = JsonSerializer.Deserialize<List<SevenTVEmoticon>>(await rawJson.Content.ReadAsStringAsync());
+			var rawJson = await Client.GetAsync("https://7tv.io/v3/emote-sets/global", Token);
+			var emotes = (await JsonSerializer.DeserializeAsync<SevenTVGlobalEmotes>(await rawJson.Content.ReadAsStreamAsync(), cancellationToken: Token)).emotes;
 
 			void addToList(SevenTVEmoticon emote)
 			{
 				if (EmoteCache.ContainsKey(emote.name))
 					return;
 
-				const int zw = 1 << 7;
-				if ((emote.visibility & zw) == zw) {
-					EmoteCache.Add(emote.name, new SizeF(-emote.width[0], -emote.height[0]));
+				const int zeroWidth = 1 << 0;
+				var imageSize = new SizeF(emote.data.host.files[0].width, emote.data.host.files[0].height);
+				if ((emote.flags & zeroWidth) == zeroWidth) {
+					EmoteCache.Add(emote.name, imageSize * -1);
 				} else {
-					EmoteCache.Add(emote.name, new SizeF(emote.width[0], emote.height[0]));
+					EmoteCache.Add(emote.name, imageSize);
 				}
 			}
 
-			foreach (var emote in json) {
+			foreach (var emote in emotes) {
 				addToList(emote);
 			}
 
-			rawJson = await Client.GetAsync("https://api.7tv.app/v2/users/" + ChannelID + "/emotes", Token);
-			json = await JsonSerializer.DeserializeAsync<List<SevenTVEmoticon>>(await rawJson.Content.ReadAsStreamAsync());
+			rawJson = await Client.GetAsync("https://7tv.io/v3/users/twitch/" + ChannelID, Token);
+			emotes = (await JsonSerializer.DeserializeAsync<SevenTVUserEmotes>(await rawJson.Content.ReadAsStreamAsync(), cancellationToken: Token)).emote_set.emotes;
 
-			foreach (var emote in json) {
+			foreach (var emote in emotes) {
 				addToList(emote);
 			}
 
