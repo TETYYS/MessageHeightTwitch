@@ -43,11 +43,12 @@ namespace MessageHeightTwitch
 				using (GZipStream decompressionStream = new GZipStream(originalFileStream, CompressionMode.Decompress)) {
 					while (true) {
 						var bX = new byte[sizeof(float)];
-						if (decompressionStream.Read(bX, 0, sizeof(float)) == 0) {
-							broken = true;
-							break;
-						}
-						var bCharWrapping = decompressionStream.ReadByte() == 0x01;
+						if (decompressionStream.ReadAtLeast(bX, sizeof(float), false) == 0) {
+                            broken = true;
+                            break;
+                        }
+
+                        var bCharWrapping = decompressionStream.ReadByte() == 0x01;
 
 						charProperties.Add(new CharacterProperty(BitConverter.ToSingle(bX, 0), bCharWrapping));
 					}
