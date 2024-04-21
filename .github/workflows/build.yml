@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        dotnet: [ '5.0.x', '6.0.x', '8.0.x' ]
+        dotnet: [ '8.0.x' ]
 
     name: Build project on .NET ${{ matrix.dotnet }}
     steps:
