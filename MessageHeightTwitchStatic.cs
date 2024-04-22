@@ -4,7 +4,8 @@ using System.Runtime.InteropServices;
 
 class MessageHeightTwitchStatic
 {
-	public struct TwitchEmote {
+	public struct TwitchEmote
+	{
 		public string Name;
 		public string Url;
 	}
@@ -65,7 +66,7 @@ class MessageHeightTwitchStatic
 		try {
 			var dict = new Dictionary<string, string>();
 			if (TwitchEmotes != null) {
-				for (int x = 0;x < TwitchEmotesLen * Marshal.SizeOf<TwitchEmote>();x += Marshal.SizeOf<TwitchEmote>()) {
+				for (int x = 0; x < TwitchEmotesLen * Marshal.SizeOf<TwitchEmote>(); x += Marshal.SizeOf<TwitchEmote>()) {
 					var te = Marshal.PtrToStructure<TwitchEmote>(new IntPtr(TwitchEmotes.ToInt64() + x));
 					dict.Add(te.Name, te.Url);
 				}

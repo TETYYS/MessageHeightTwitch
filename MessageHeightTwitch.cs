@@ -9,8 +9,8 @@ using SixLabors.ImageSharp;
 
 namespace MessageHeightTwitch
 {
-    public class MessageHeightTwitch
-    {
+	public class MessageHeightTwitch
+	{
 		public struct CharacterProperty
 		{
 			public float Width;
@@ -55,7 +55,7 @@ namespace MessageHeightTwitch
 			}
 
 			CharacterProperties = charProperties.ToArray();
-			
+
 			Debug.Assert(broken);
 			Debug.Assert(CharacterProperties['A'].Width == 8);
 			Debug.Assert(CharacterProperties['@'].Width == 12.171875f);
@@ -317,7 +317,7 @@ namespace MessageHeightTwitch
 
 			var split = Regex.Split(Input, @"(?<=[ -])");
 			int curChar = 0;
-			for (int x = 0;x < split.Length;/* Increment is at the end of the loop */) {
+			for (int x = 0; x < split.Length;/* Increment is at the end of the loop */) {
 				// Currently processing emote name
 				string curEmoteName = null;
 				// Currently processing emote provider
@@ -388,7 +388,7 @@ namespace MessageHeightTwitch
 						// No dice, try to:
 						curEmoteName = split[x].Substring(curChar);
 						emojiMatch = EmojiRegex.Match(curEmoteName);
-						
+
 						//	...limit current lookup to first possible emoji
 						if (emojiMatch.Success)
 							curEmoteName = curEmoteName.Substring(0, emojiMatch.Index);
@@ -551,7 +551,7 @@ namespace MessageHeightTwitch
 				if (split[x].Substring(curChar) != " ")
 					prevEmote = null;
 
-				for (int oldCurChar = curChar;curChar < split[x].Length;curChar++) {
+				for (int oldCurChar = curChar; curChar < split[x].Length; curChar++) {
 					if (emojiMatch.Success && emojiMatch.Index == curChar - oldCurChar) {
 						if (!FFZIsEmojiSupported(split[x].Substring(curChar, emojiMatch.Length)) &&
 							!BTTVIsEmojiSupported(split[x].Substring(curChar, emojiMatch.Length))) {

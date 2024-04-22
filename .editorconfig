@@ -1,0 +1,12 @@
+root = true
+
+[*.cs]
+indent_size = 4
+indent_style = tab
+tab_width = 4
+
+csharp_new_line_before_open_brace = accessors, anonymous_methods, anonymous_types, events, indexers, local_functions, methods, object_collection_array_initializers, properties, types
+csharp_new_line_before_else = false
+csharp_new_line_before_catch = false
+csharp_new_line_before_members_in_object_initializers = true
+csharp_preserve_single_line_statements = true

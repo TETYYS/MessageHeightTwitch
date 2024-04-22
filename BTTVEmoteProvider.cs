@@ -54,7 +54,7 @@ namespace MessageHeightTwitch
 
 			var rawJson = await Client.GetAsync("https://api.betterttv.net/3/cached/emotes/global", Token);
 			rawJson.EnsureSuccessStatusCode();
-			
+
 			var globalEmotes = await JsonSerializer.DeserializeAsync<IEnumerable<BTTVEmote>>(await rawJson.Content.ReadAsStreamAsync());
 
 			void addToList(string Name, Stream EmoteStream)
@@ -102,7 +102,8 @@ namespace MessageHeightTwitch
 				.Replace("module.exports = ", "")
 				.Replace(";", "")
 				.Replace("'", "\"");
-			var emojiBlacklist = JsonSerializer.Deserialize<List<string>>(rawContents, new JsonSerializerOptions() {
+			var emojiBlacklist = JsonSerializer.Deserialize<List<string>>(rawContents, new JsonSerializerOptions()
+			{
 				ReadCommentHandling = JsonCommentHandling.Skip
 			});
 
