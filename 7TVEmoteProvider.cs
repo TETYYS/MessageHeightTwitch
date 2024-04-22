@@ -23,13 +23,13 @@ namespace MessageHeightTwitch
 						public int width { get; set; }
 						public int height { get; set; }
 					}
-					
+
 					public List<SevenTVEmoticonFile> files { get; set; }
 				}
-				
+
 				public SevenTVEmoticonHost host { get; set; }
 			}
-			
+
 			public string name { get; set; }
 			public int flags { get; set; }
 			public SevenTVEmoticonData data { get; set; }
@@ -39,17 +39,17 @@ namespace MessageHeightTwitch
 		{
 			public List<SevenTVEmoticon> emotes { get; set; }
 		}
-		
+
 		private class SevenTVUserEmotes
 		{
 			internal class SevenTVEmoteSet
 			{
 				public List<SevenTVEmoticon> emotes { get; set; }
 			}
-			
+
 			public SevenTVEmoteSet emote_set { get; set; }
 		}
-		
+
 		public bool TryGetEmote(string Name, out SizeF Size) => EmoteCache.TryGetValue(Name, out Size);
 
 		public async Task Initialize(string ChannelID, CancellationToken Token)
