@@ -10,12 +10,8 @@ namespace MessageHeightTwitch.Measurement.EmoteRewriting;
 
 /// <summary>
 /// Finds what a piece of message text shows as: a Twitch, BTTV, FFZ or 7TV emote, an emote modifier, or an
-    /// emoji image. <see cref="ModifierRewriter"/> passes the resolved images on to layout.
+/// emoji image. <see cref="ModifierRewriter"/> passes the resolved images on to layout.
 /// </summary>
-/// <remarks>
-/// Cache usage: one fixed process-wide dictionary of legacy Twitch emote sizes; no per-message result cache.
-/// Instances retain provider callbacks and catalog references, whose storage belongs to the providers.
-/// </remarks>
 internal sealed class EmoteResolver
 {
     private readonly EmoteLookup BTTV;

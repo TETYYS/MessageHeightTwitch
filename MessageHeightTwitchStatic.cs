@@ -35,11 +35,9 @@ internal static class MessageHeightTwitchStatic
         public byte* Url;
     }
 
-    /// <summary>Publishes and stops one channel measurer and routes loading errors.</summary>
-    /// <remarks>
-    /// Cache usage: retains pending Twitch image URLs, at most one measurer and one error callback while
-    /// referenced by the registration dictionary or in-flight work. Stop cancels the measurer's loading.
-    /// </remarks>
+    /// <summary>
+    /// Publishes and stops one channel measurer and routes loading errors.
+    /// </summary>
     internal sealed class ChannelRegistration
     {
         private readonly Lock Lock = new();

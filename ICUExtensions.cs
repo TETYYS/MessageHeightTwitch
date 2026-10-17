@@ -10,11 +10,9 @@ namespace MessageHeightTwitch;
  * icu.net exposes Script but not uscript_getScriptExtensions. Bind to the same
  * initialized ICU version so script data and bracket properties stay in sync.
  */
-/// <summary>Binds ICU script-extension and paired-bracket APIs from the initialized ICU library.</summary>
-/// <remarks>
-/// Cache usage: three lazy values retain one native library handle/version and two function addresses for
-/// the process lifetime. Unicode data belongs to ICU; no per-character results are cached here.
-/// </remarks>
+/// <summary>
+/// Binds ICU script-extension and paired-bracket APIs from the initialized ICU library.
+/// </summary>
 internal static unsafe class ICUExtensions
 {
     private static readonly Lazy<(nint Handle, string Major)> Library = new(() => {

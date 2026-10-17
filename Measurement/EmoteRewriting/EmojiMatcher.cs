@@ -16,10 +16,6 @@ internal static class EmojiMatcher
     /// <summary>
     /// One UTF-16 prefix in the shared emoji trie.
     /// </summary>
-    /// <remarks>
-    /// Cache usage: one child dictionary per node and one entry per outgoing character; leaves have empty
-    /// dictionaries. Nodes live with the process-wide trie and have no separate result cache.
-    /// </remarks>
     private sealed class Node
     {
         public readonly Dictionary<char, Node> Children = new();
@@ -94,9 +90,11 @@ internal static class EmojiMatcher
             var provider = MessageHeightTwitch.EMOTE_PROVIDER.NONE;
             var joinedEnd = index;
 
-            // The installed FFZ tokenizer patch recognizes a complete pictographic
-            // joined grapheme, including non-RGI sequences. A following mark makes
-            // that grapheme ineligible and leaves its components to FFZ's tokenizer.
+            /*
+             * The installed FFZ tokenizer patch recognizes a complete pictographic
+             * joined grapheme, including non-RGI sequences. A following mark makes
+             * that grapheme ineligible and leaves its components to FFZ's tokenizer.
+             */
             if (ffzJoined) {
                 while (graphemeEnd <= index) {
                     graphemeStart = graphemeEnd;

@@ -7,10 +7,9 @@ using Icu;
 
 namespace MessageHeightTwitch;
 
-/// <summary>Pins the ICU version used by the library.</summary>
-/// <remarks>
-/// Cache usage: Linux retains two native library handles for the process lifetime. ICU owns its data.
-/// </remarks>
+/// <summary>
+/// Pins the ICU version used by the library.
+/// </summary>
 internal static class IcuVersion
 {
     private const int Major = 78;

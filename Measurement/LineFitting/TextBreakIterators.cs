@@ -9,11 +9,6 @@ namespace MessageHeightTwitch.Measurement.LineFitting;
 /// <summary>
 /// Reusable line and grapheme iterators owned by line breaking.
 /// </summary>
-/// <remarks>
-/// Cache usage: two native ICU iterators per line-breaking workspace and one process-wide two-byte
-/// empty-text sentinel. Native storage varies with ICU and input; result lists belong to the workspace.
-/// Dispose closes both iterators, and each call detaches the caller's text before returning.
-/// </remarks>
 internal sealed unsafe class TextBreakIterators : IDisposable
 {
     private static readonly char* EmptyText = (char*)NativeMemory.AllocZeroed((nuint)sizeof(char));
