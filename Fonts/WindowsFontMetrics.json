@@ -1,0 +1,142 @@
+{
+  "schema": "WFM1",
+  "os": "Microsoft Windows NT 10.0.26200.0",
+  "skia": "153.0",
+  "size": 14,
+  "weights": [
+    400,
+    700
+  ],
+  "subpixel": true,
+  "embeddedBitmaps": true,
+  "edging": "SubpixelAntialias",
+  "simulations": "SK_WIN_FONTMGR_NO_SIMULATIONS with the EBDT exception",
+  "fonts": [
+    {
+      "file": "Inter-400-cyrillic-ext.ttf",
+      "sha256": "4071d1ef52c0b854537dfdb891053e7e23dbc53530d2f8401a734c7d9ea58ee0",
+      "weight": 400,
+      "italic": false,
+      "glyphs": 229
+    },
+    {
+      "file": "Inter-400-cyrillic.ttf",
+      "sha256": "0eae4d81e3f62dfe8cf1d73c0a1430d3de0e94c7944d8527ab21c672435bff97",
+      "weight": 400,
+      "italic": false,
+      "glyphs": 144
+    },
+    {
+      "file": "Inter-400-greek-ext.ttf",
+      "sha256": "a71fa60f14c24245738e2e2758be8400b66d6ca1016d940b549a6226bf493e85",
+      "weight": 400,
+      "italic": false,
+      "glyphs": 263
+    },
+    {
+      "file": "Inter-400-greek.ttf",
+      "sha256": "e0fda492adb8db24a7909240c17bda6d546d6884212a77ba2218a8291c67ebb9",
+      "weight": 400,
+      "italic": false,
+      "glyphs": 161
+    },
+    {
+      "file": "Inter-400-vietnamese.ttf",
+      "sha256": "f844ffa85c321b0ed2f40ebcbdaced203058714fb4916ef5d091e1db3372e226",
+      "weight": 400,
+      "italic": false,
+      "glyphs": 138
+    },
+    {
+      "file": "Inter-400-latin-ext.ttf",
+      "sha256": "7299400bc3431f1adec9784df50fdba24a898a22cd8faea9146e77c427b87c6c",
+      "weight": 400,
+      "italic": false,
+      "glyphs": 670
+    },
+    {
+      "file": "Inter-400-latin.ttf",
+      "sha256": "1c0fb90b5569f108515914652db255a1152d006e60d61afdd342cc6cd7abc568",
+      "weight": 400,
+      "italic": false,
+      "glyphs": 348
+    },
+    {
+      "file": "Inter-700-cyrillic-ext.ttf",
+      "sha256": "4071d1ef52c0b854537dfdb891053e7e23dbc53530d2f8401a734c7d9ea58ee0",
+      "weight": 700,
+      "italic": false,
+      "glyphs": 229
+    },
+    {
+      "file": "Inter-700-cyrillic.ttf",
+      "sha256": "0eae4d81e3f62dfe8cf1d73c0a1430d3de0e94c7944d8527ab21c672435bff97",
+      "weight": 700,
+      "italic": false,
+      "glyphs": 144
+    },
+    {
+      "file": "Inter-700-greek-ext.ttf",
+      "sha256": "a71fa60f14c24245738e2e2758be8400b66d6ca1016d940b549a6226bf493e85",
+      "weight": 700,
+      "italic": false,
+      "glyphs": 263
+    },
+    {
+      "file": "Inter-700-greek.ttf",
+      "sha256": "e0fda492adb8db24a7909240c17bda6d546d6884212a77ba2218a8291c67ebb9",
+      "weight": 700,
+      "italic": false,
+      "glyphs": 161
+    },
+    {
+      "file": "Inter-700-vietnamese.ttf",
+      "sha256": "f844ffa85c321b0ed2f40ebcbdaced203058714fb4916ef5d091e1db3372e226",
+      "weight": 700,
+      "italic": false,
+      "glyphs": 138
+    },
+    {
+      "file": "Inter-700-latin-ext.ttf",
+      "sha256": "7299400bc3431f1adec9784df50fdba24a898a22cd8faea9146e77c427b87c6c",
+      "weight": 700,
+      "italic": false,
+      "glyphs": 670
+    },
+    {
+      "file": "Inter-700-latin.ttf",
+      "sha256": "1c0fb90b5569f108515914652db255a1152d006e60d61afdd342cc6cd7abc568",
+      "weight": 700,
+      "italic": false,
+      "glyphs": 348
+    },
+    {
+      "file": "CambriaMath-Regular.ttf",
+      "sha256": "0a0604d7cda5c306b07ee2acb51b5f417c5f9fd1796861668402f6e0c788784d",
+      "weight": 700,
+      "italic": false,
+      "glyphs": 7614
+    },
+    {
+      "file": "MSPGothic-Regular.ttf",
+      "sha256": "d75a87f43e1c2b3dd1d3666db8ebf4066f0f7b3417870ff52df4b8f9e62b4166",
+      "weight": 700,
+      "italic": false,
+      "glyphs": 22291
+    },
+    {
+      "file": "simsun-Regular.ttf",
+      "sha256": "025fedb4284b88a80a2eb00594d23405bc7fdb71b92b42fb96b7202cd3cb6d40",
+      "weight": 700,
+      "italic": false,
+      "glyphs": 28905
+    },
+    {
+      "file": "SimSun-ExtB-Regular.ttf",
+      "sha256": "2a476ca00b5fbbbc12a4c5335634722b11a495ed87429284325701f1e36b596a",
+      "weight": 700,
+      "italic": false,
+      "glyphs": 60455
+    }
+  ]
+}

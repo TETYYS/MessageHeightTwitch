@@ -1,0 +1,17 @@
+[package]
+name = "mht_opentype"
+version = "0.1.0"
+edition = "2026"
+publish = false
+description = "C exports over read-fonts for the OpenType tables HarfBuzz doesn't expose"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+read-fonts = "0.45.0"
+
+[profile.release]
+lto = true
+panic = "abort"
+strip = true

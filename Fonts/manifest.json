@@ -1,0 +1,710 @@
+[
+  {
+    "file": "Arial-Regular.ttf",
+    "family": "Arial",
+    "weight": "Regular",
+    "source": "arial.ttf",
+    "collectionIndex": 0,
+    "sha256": "b3658eadae55e682b5f69eb64c439c1ecc8f196c0bb8d4756d145d13bc86476a"
+  },
+  {
+    "file": "Arial-Bold.ttf",
+    "family": "Arial",
+    "weight": "Bold",
+    "source": "arialbd.ttf",
+    "collectionIndex": 0,
+    "sha256": "e8f4e3baf6cc35fed6fcce3a540e8b39e8f6cda1d22a28f2ec8f526fef7a43f5"
+  },
+  {
+    "file": "CambriaMath-Regular.ttf",
+    "family": "Cambria Math",
+    "weight": "Regular",
+    "source": "cambria.ttc",
+    "collectionIndex": 1,
+    "sha256": "0a0604d7cda5c306b07ee2acb51b5f417c5f9fd1796861668402f6e0c788784d"
+  },
+  {
+    "file": "Tahoma-Regular.ttf",
+    "family": "Tahoma",
+    "weight": "Regular",
+    "source": "tahoma.ttf",
+    "collectionIndex": 0,
+    "sha256": "9af03d4ad44a3b413d92f7de48b94aa7cc8a1471a75d498406eae837f62ee1d1"
+  },
+  {
+    "file": "Tahoma-Bold.ttf",
+    "family": "Tahoma",
+    "weight": "Bold",
+    "source": "tahomabd.ttf",
+    "collectionIndex": 0,
+    "sha256": "b16ed1a15e0cabea8d41d9f8899c253cd61ac466af5e3980d02bd0cf311c2267"
+  },
+  {
+    "file": "LucidaSansUnicode-Regular.ttf",
+    "family": "Lucida Sans Unicode",
+    "weight": "Regular",
+    "source": "l_10646.ttf",
+    "collectionIndex": 0,
+    "sha256": "97226e81f19eff8c8fb191745748bab920472c005d3ec4e23d9a50a12c471d92"
+  },
+  {
+    "file": "MicrosoftSansSerif-Regular.ttf",
+    "family": "Microsoft Sans Serif",
+    "weight": "Regular",
+    "source": "micross.ttf",
+    "collectionIndex": 0,
+    "sha256": "89b42a12ea0379133fb2f4a1d1bd53058fb61e2343c1d509452d5761acc85b7a"
+  },
+  {
+    "file": "PalatinoLinotype-Regular.ttf",
+    "family": "Palatino Linotype",
+    "weight": "Regular",
+    "source": "pala.ttf",
+    "collectionIndex": 0,
+    "sha256": "e47d594e2e2bc31b28f87b6f66483d32f925843ceb002f919c7a403aca48813d"
+  },
+  {
+    "file": "PalatinoLinotype-Bold.ttf",
+    "family": "Palatino Linotype",
+    "weight": "Bold",
+    "source": "palab.ttf",
+    "collectionIndex": 0,
+    "sha256": "8e14668bbae03f78ed668dbe3261218881960dcd9fb80ad6c1d1dfb4226a57c3"
+  },
+  {
+    "file": "SegoeUI-Regular.ttf",
+    "family": "Segoe UI",
+    "weight": "Regular",
+    "source": "segoeui.ttf",
+    "collectionIndex": 0,
+    "sha256": "8134dbcd09e7b123c9a7f229d49cffbcb01352cc72ea5e1076b65d0dca9f73cd"
+  },
+  {
+    "file": "SegoeUI-Bold.ttf",
+    "family": "Segoe UI",
+    "weight": "Bold",
+    "source": "segoeuib.ttf",
+    "collectionIndex": 0,
+    "sha256": "aeb9e4a6ec5cc59f4d72df8189032d7dbb28f45161cf1552174818b5465dac4e"
+  },
+  {
+    "file": "SegoeUIEmoji-Regular.ttf",
+    "family": "Segoe UI Emoji",
+    "weight": "Regular",
+    "source": "seguiemj.ttf",
+    "collectionIndex": 0,
+    "sha256": "451df9bb5546055af625ff86aa72695df43e8e170b4c6c1316fe44e9c7a22f7c"
+  },
+  {
+    "file": "SegoeUISymbol-Regular.ttf",
+    "family": "Segoe UI Symbol",
+    "weight": "Regular",
+    "source": "seguisym.ttf",
+    "collectionIndex": 0,
+    "sha256": "a4a35dcc62cd30e1a6c97b695ecef83e59d2b149e3af834f6a49f11851d56b37"
+  },
+  {
+    "file": "SegoeUIHistoric-Regular.ttf",
+    "family": "Segoe UI Historic",
+    "weight": "Regular",
+    "source": "seguihis.ttf",
+    "collectionIndex": 0,
+    "sha256": "a162ceeaf701b55d11c542daf1c39c52bfaf686496505bff2eb75ca24814c136"
+  },
+  {
+    "file": "SansSerifCollection-Regular.ttf",
+    "family": "Sans Serif Collection",
+    "weight": "Regular",
+    "source": "SansSerifCollection.ttf",
+    "collectionIndex": 0,
+    "sha256": "eb78c210d380fce7d3822b3a5ccfa808f1eb0390de6237f5460970679f393ce0"
+  },
+  {
+    "file": "NirmalaUI-Regular.ttf",
+    "family": "Nirmala UI",
+    "weight": "Regular",
+    "source": "Nirmala.ttc",
+    "collectionIndex": 0,
+    "sha256": "0eb39657bef9ff80d1e4403d1d025a880be03e0722df00e003501488dbfeb4f2"
+  },
+  {
+    "file": "NirmalaUI-Bold.ttf",
+    "family": "Nirmala UI",
+    "weight": "Bold",
+    "source": "Nirmala.ttc",
+    "collectionIndex": 1,
+    "sha256": "96e0d4c23bd29f069b87611629288e7761741e8d21f7701fc92c89bdba1c7573"
+  },
+  {
+    "file": "Sylfaen-Regular.ttf",
+    "family": "Sylfaen",
+    "weight": "Regular",
+    "source": "sylfaen.ttf",
+    "collectionIndex": 0,
+    "sha256": "ac278d932d59558a76817e98051b1dae53867aa81ad83e5198b1b4c4b8066a08"
+  },
+  {
+    "file": "LeelawadeeUI-Regular.ttf",
+    "family": "Leelawadee UI",
+    "weight": "Regular",
+    "source": "leelawui.ttf",
+    "collectionIndex": 0,
+    "sha256": "ca9a670f12d0e47c20441012a22f78ab17c1b126818e0e887ef7db6ecf5e76b4"
+  },
+  {
+    "file": "LeelawadeeUI-Bold.ttf",
+    "family": "Leelawadee UI",
+    "weight": "Bold",
+    "source": "leelauib.ttf",
+    "collectionIndex": 0,
+    "sha256": "15f58cff987dce2ca1e7740ca6001b8e4e2589ea80898fdedca26d2726979f7e"
+  },
+  {
+    "file": "Gadugi-Regular.ttf",
+    "family": "Gadugi",
+    "weight": "Regular",
+    "source": "gadugi.ttf",
+    "collectionIndex": 0,
+    "sha256": "0ec2bdbfc2ba99d9fb05b6f7c511e7ab8b7c055e2d644570ad777455d6e9796d"
+  },
+  {
+    "file": "Gadugi-Bold.ttf",
+    "family": "Gadugi",
+    "weight": "Bold",
+    "source": "gadugib.ttf",
+    "collectionIndex": 0,
+    "sha256": "c96226cba7f50e94b534a5f8ade6a54f48a03be7c73360524eda5cbce4de34b6"
+  },
+  {
+    "file": "TimesNewRoman-Regular.ttf",
+    "family": "Times New Roman",
+    "weight": "Regular",
+    "source": "times.ttf",
+    "collectionIndex": 0,
+    "sha256": "931c5de5c70401d9324d5014c123802b4fb753000360ceb2f56c589403cd58c5"
+  },
+  {
+    "file": "TimesNewRoman-Bold.ttf",
+    "family": "Times New Roman",
+    "weight": "Bold",
+    "source": "timesbd.ttf",
+    "collectionIndex": 0,
+    "sha256": "54fbe2c70af7c85a97bed0573227e3ccc4b2486012e3ca2a40c6bc77065846f5"
+  },
+  {
+    "file": "MalgunGothic-Regular.ttf",
+    "family": "Malgun Gothic",
+    "weight": "Regular",
+    "source": "malgun.ttf",
+    "collectionIndex": 0,
+    "sha256": "7a183cf1c6c56b9609fcc16eda8b5229fbc11758a21e669ec00343239b02192f"
+  },
+  {
+    "file": "MalgunGothic-Bold.ttf",
+    "family": "Malgun Gothic",
+    "weight": "Bold",
+    "source": "malgunbd.ttf",
+    "collectionIndex": 0,
+    "sha256": "e8cbc0b2afcc14fb45dfb6086d5102c0b23a96e7b6e708f3122acde1b86c9082"
+  },
+  {
+    "file": "JavaneseText-Regular.ttf",
+    "family": "Javanese Text",
+    "weight": "Regular",
+    "source": "javatext.ttf",
+    "collectionIndex": 0,
+    "sha256": "df8d94382f73e6d2197b60653c3d55c28ab5cf127a82e65b8af4ed1b52fdc412"
+  },
+  {
+    "file": "YuGothic-Regular.ttf",
+    "family": "Yu Gothic",
+    "weight": "Regular",
+    "source": "YuGothR.ttc",
+    "collectionIndex": 0,
+    "sha256": "8409553b7731bbaa2bfbfb8d0745236bc6541fc8a1e9b3fe8ffbc0236b37ab58"
+  },
+  {
+    "file": "YuGothic-Bold.ttf",
+    "family": "Yu Gothic",
+    "weight": "Bold",
+    "source": "YuGothB.ttc",
+    "collectionIndex": 0,
+    "sha256": "247a644e5c177526c34c7d8d6f56c37789f1f0c7adad3a79f35c51269ff11fe4"
+  },
+  {
+    "file": "MSPGothic-Regular.ttf",
+    "family": "MS PGothic",
+    "weight": "Regular",
+    "source": "msgothic.ttc",
+    "collectionIndex": 2,
+    "sha256": "d75a87f43e1c2b3dd1d3666db8ebf4066f0f7b3417870ff52df4b8f9e62b4166"
+  },
+  {
+    "file": "MicrosoftYaHei-Regular.ttf",
+    "family": "Microsoft YaHei",
+    "weight": "Regular",
+    "source": "msyh.ttc",
+    "collectionIndex": 0,
+    "sha256": "4e9b6a77463702a4ff2f9e854835b7be60890a8dab3253c9139618bbc85ba63d"
+  },
+  {
+    "file": "MicrosoftYaHei-Bold.ttf",
+    "family": "Microsoft YaHei",
+    "weight": "Bold",
+    "source": "msyhbd.ttc",
+    "collectionIndex": 0,
+    "sha256": "005cf0610c80d48f38fe26e8bae334323782ddd2f0c0dc759027d79e63ec7466"
+  },
+  {
+    "file": "MongolianBaiti-Regular.ttf",
+    "family": "Mongolian Baiti",
+    "weight": "Regular",
+    "source": "monbaiti.ttf",
+    "collectionIndex": 0,
+    "sha256": "bf15e713f2ae14f85201ad31752054b0d88adb64634d9a1f5a7bc032f981ff89"
+  },
+  {
+    "file": "MyanmarText-Regular.ttf",
+    "family": "Myanmar Text",
+    "weight": "Regular",
+    "source": "mmrtext.ttf",
+    "collectionIndex": 0,
+    "sha256": "f9b362b1e0e09880cdf71852e3cc6dd6f7babb3fb6c12019f39af2135c6233cc"
+  },
+  {
+    "file": "MyanmarText-Bold.ttf",
+    "family": "Myanmar Text",
+    "weight": "Bold",
+    "source": "mmrtextb.ttf",
+    "collectionIndex": 0,
+    "sha256": "a96d49aa45e2800f49734578e5f5c1eaeb142e60a1fe1a4cc4d885170be5dcfe"
+  },
+  {
+    "file": "MicrosoftNewTaiLue-Regular.ttf",
+    "family": "Microsoft New Tai Lue",
+    "weight": "Regular",
+    "source": "ntailu.ttf",
+    "collectionIndex": 0,
+    "sha256": "de0b632015447f28c2db41c8e07c745cedb05ead5dbc2e73f19da14d2e5f2151"
+  },
+  {
+    "file": "MicrosoftNewTaiLue-Bold.ttf",
+    "family": "Microsoft New Tai Lue",
+    "weight": "Bold",
+    "source": "ntailub.ttf",
+    "collectionIndex": 0,
+    "sha256": "cfc2acbf9ae0205a0a258e564bdbf5466a4e49a95281a1d2e72690f149ec837b"
+  },
+  {
+    "file": "Ebrima-Regular.ttf",
+    "family": "Ebrima",
+    "weight": "Regular",
+    "source": "ebrima.ttf",
+    "collectionIndex": 0,
+    "sha256": "1dcd304f0ba642dbc3c3f3ccb70c24e9fad7ada2e2d5d0061c7cacab86e8df92"
+  },
+  {
+    "file": "Ebrima-Bold.ttf",
+    "family": "Ebrima",
+    "weight": "Bold",
+    "source": "ebrimabd.ttf",
+    "collectionIndex": 0,
+    "sha256": "a7bc75937950d0f217f79313631d81f5b92459c414a4099d6ea3c0c0262a716b"
+  },
+  {
+    "file": "MicrosoftPhagsPa-Regular.ttf",
+    "family": "Microsoft PhagsPa",
+    "weight": "Regular",
+    "source": "phagspa.ttf",
+    "collectionIndex": 0,
+    "sha256": "538949482d964e9f353a3a8d860bb3eda93b46b830f3b677e4f53eb2ff3a6e7d"
+  },
+  {
+    "file": "MicrosoftPhagsPa-Bold.ttf",
+    "family": "Microsoft PhagsPa",
+    "weight": "Bold",
+    "source": "phagspab.ttf",
+    "collectionIndex": 0,
+    "sha256": "03e4e45bb8ebb6d055a5584166cc26712bf7e746ea29cb6e548341361d31dc85"
+  },
+  {
+    "file": "MicrosoftTaiLe-Regular.ttf",
+    "family": "Microsoft Tai Le",
+    "weight": "Regular",
+    "source": "taile.ttf",
+    "collectionIndex": 0,
+    "sha256": "f5151d081f6afea4c26464e0cd5e695f57a99209cfeea2f483c3108684660eb6"
+  },
+  {
+    "file": "MicrosoftTaiLe-Bold.ttf",
+    "family": "Microsoft Tai Le",
+    "weight": "Bold",
+    "source": "taileb.ttf",
+    "collectionIndex": 0,
+    "sha256": "1878842d8dbdf8489794af0bace95a956db270dfa506ddcaabf94fa827b769ac"
+  },
+  {
+    "file": "MVBoli-Regular.ttf",
+    "family": "MV Boli",
+    "weight": "Regular",
+    "source": "mvboli.ttf",
+    "collectionIndex": 0,
+    "sha256": "5dfd7a4c708caeefae42cdb9540946de042beeb8c069dfde0dbc14c2fa0705ae"
+  },
+  {
+    "file": "MicrosoftHimalaya-Regular.ttf",
+    "family": "Microsoft Himalaya",
+    "weight": "Regular",
+    "source": "himalaya.ttf",
+    "collectionIndex": 0,
+    "sha256": "fdec3a7efacd57913d3c14111837908ccbabea5b0b44ec62527eb73acf743afb"
+  },
+  {
+    "file": "MicrosoftJhengHei-Regular.ttf",
+    "family": "Microsoft JhengHei",
+    "weight": "Regular",
+    "source": "msjh.ttc",
+    "collectionIndex": 0,
+    "sha256": "32772699036cdbf7535c32742f2f1adc10114f8c2ca15e2415aefa73081c5cf9"
+  },
+  {
+    "file": "MicrosoftJhengHei-Bold.ttf",
+    "family": "Microsoft JhengHei",
+    "weight": "Bold",
+    "source": "msjhbd.ttc",
+    "collectionIndex": 0,
+    "sha256": "c4f34cc843e28f5a22604af7188fee8bf85b85b7bbe1dcd1dfe6a83307551f4a"
+  },
+  {
+    "file": "simsun-Regular.ttf",
+    "family": "simsun",
+    "weight": "Regular",
+    "source": "simsun.ttc",
+    "collectionIndex": 0,
+    "sha256": "025fedb4284b88a80a2eb00594d23405bc7fdb71b92b42fb96b7202cd3cb6d40"
+  },
+  {
+    "file": "MicrosoftYiBaiti-Regular.ttf",
+    "family": "Microsoft Yi Baiti",
+    "weight": "Regular",
+    "source": "msyi.ttf",
+    "collectionIndex": 0,
+    "sha256": "80aef1c25135b945e9de7d09e6445c386405eb2e0ea7032d4cd00a2fe3eef0ae"
+  },
+  {
+    "file": "SimSun-ExtB-Regular.ttf",
+    "family": "SimSun-ExtB",
+    "weight": "Regular",
+    "source": "simsunb.ttf",
+    "collectionIndex": 0,
+    "sha256": "2a476ca00b5fbbbc12a4c5335634722b11a495ed87429284325701f1e36b596a"
+  },
+  {
+    "file": "SimSun-ExtG-Regular.ttf",
+    "family": "SimSun-ExtG",
+    "weight": "Regular",
+    "source": "SimsunExtG.ttf",
+    "collectionIndex": 0,
+    "sha256": "9cadcd0ab3d549446b51001d9896773d87ad012d93d842532f321eca514bffd8"
+  },
+  {
+    "file": "WindowsSystemFallbacks.bin",
+    "family": "Windows system fallback",
+    "weight": "400/700",
+    "source": "Skia/DirectWrite en; Han zh-Hant; emoji und-Zsym/und-Zsye",
+    "sha256": "635b69b84cd3a32e9e4cf314fe29ae6853c3459903204c055d75617cd1d8b079"
+  },
+  {
+    "file": "WindowsSystemFallbacks.json",
+    "family": "Windows system fallback",
+    "weight": "400/700",
+    "source": "Skia/DirectWrite en; Han zh-Hant; emoji und-Zsym/und-Zsye",
+    "sha256": "cb45cf02a59a605d2924e732a319ffa3f91032d4237d35bcceb500c15c456448"
+  },
+  {
+    "file": "Calibri-Regular.ttf",
+    "family": "Calibri",
+    "weight": "Regular",
+    "source": "calibri.ttf",
+    "collectionIndex": 0,
+    "sha256": "57e93ff143572bcc092c1f56202d43ddc07bb119aa104c6d7af163470fb551f6"
+  },
+  {
+    "file": "Calibri-Bold.ttf",
+    "family": "Calibri",
+    "weight": "Bold",
+    "source": "calibrib.ttf",
+    "collectionIndex": 0,
+    "sha256": "0a8296747536ead27d5f48f67e911cc3b207742b3f704e66995251d12fd422e5"
+  },
+  {
+    "file": "YuGothicUI-Regular.ttf",
+    "family": "Yu Gothic UI",
+    "weight": "Regular",
+    "source": "YuGothR.ttc",
+    "collectionIndex": 1,
+    "sha256": "f0480461254ae21385ad9705d75048ba65e77a20581f15fbda2d0ace3c3de480"
+  },
+  {
+    "file": "YuGothicUI-Bold.ttf",
+    "family": "Yu Gothic UI",
+    "weight": "Bold",
+    "source": "YuGothB.ttc",
+    "collectionIndex": 1,
+    "sha256": "175b475bb5dea87d2c1a8315fe0e257a8091a2835b3489855b19ab5277edd2c5"
+  },
+  {
+    "file": "MicrosoftYaHeiUI-Regular.ttf",
+    "family": "Microsoft YaHei UI",
+    "weight": "Regular",
+    "source": "msyh.ttc",
+    "collectionIndex": 1,
+    "sha256": "9bce49dd4713202789bd175e2a254222bc686e4f37b51380087ecc6440e841c8"
+  },
+  {
+    "file": "MicrosoftYaHeiUI-Bold.ttf",
+    "family": "Microsoft YaHei UI",
+    "weight": "Bold",
+    "source": "msyhbd.ttc",
+    "collectionIndex": 1,
+    "sha256": "34ea080ff7a3e7149ef17d06536f2744daeaf0009389e1931d4e9f45f9ad0ed4"
+  },
+  {
+    "file": "MicrosoftJhengHeiUI-Regular.ttf",
+    "family": "Microsoft JhengHei UI",
+    "weight": "Regular",
+    "source": "msjh.ttc",
+    "collectionIndex": 1,
+    "sha256": "bc2ad14efe57cc21be738b6c99cc648b39957194c489ed52b8a2e5dfea728327"
+  },
+  {
+    "file": "MicrosoftJhengHeiUI-Bold.ttf",
+    "family": "Microsoft JhengHei UI",
+    "weight": "Bold",
+    "source": "msjhbd.ttc",
+    "collectionIndex": 1,
+    "sha256": "2b36b02d978a3474e1b9eaa2a3b06c192635d92f8fa143ef3c33addbd2fc778c"
+  },
+  {
+    "file": "MingLiU-ExtB-Regular.ttf",
+    "family": "MingLiU-ExtB",
+    "weight": "Regular",
+    "source": "mingliub.ttc",
+    "collectionIndex": 0,
+    "sha256": "308ee075730d3e6bb99eb4bc185c8180bb55d206d3451a8e3a7c69df4756fb9f"
+  },
+  {
+    "file": "MingLiU_MSCS-ExtB-Regular.ttf",
+    "family": "MingLiU_MSCS-ExtB",
+    "weight": "Regular",
+    "source": "mingliub.ttc",
+    "collectionIndex": 3,
+    "sha256": "cb65a9e15a1df385278e94772778fde511b7ba2269ef24ca4670b32eed703da3"
+  },
+  {
+    "file": "WindowsFontMetrics.bin",
+    "family": "Windows platform metrics",
+    "weight": "400/700",
+    "source": "Skia/DirectWrite selected-face glyph advances at 14px",
+    "sha256": "7edfdc73bc93515ac3107613a79ce4468ff52a6eed8200f343bcc69e28db4661"
+  },
+  {
+    "file": "WindowsFontMetrics.json",
+    "family": "Windows platform metrics",
+    "weight": "400/700",
+    "source": "Skia/DirectWrite selected-face glyph advances at 14px",
+    "sha256": "0593d26bae2272e3924773ff195fee4c859fd7ac5773ec7722ebd069e3bf55f9"
+  },
+  {
+    "file": "Inter-400-cyrillic-ext.ttf",
+    "family": "Inter",
+    "weight": "Regular",
+    "source": "https://assets.twitch.tv/assets/inter-cyrillic-ext-variable-wghtOnly-normal-39fb6b9a2bf03fb4233a.woff2",
+    "unicodeRange": "U\u002B460-52F,U\u002B1C80-1C88,U\u002B20B4,U\u002B2DE0-2DFF,U\u002BA640-A69F,U\u002BFE2E-FE2F",
+    "sha256": "4071d1ef52c0b854537dfdb891053e7e23dbc53530d2f8401a734c7d9ea58ee0"
+  },
+  {
+    "file": "Inter-400-cyrillic.ttf",
+    "family": "Inter",
+    "weight": "Regular",
+    "source": "https://assets.twitch.tv/assets/inter-cyrillic-variable-wghtOnly-normal-6f38ebbb2587f3cc50d7.woff2",
+    "unicodeRange": "U\u002B400-45F,U\u002B490-491,U\u002B4B0-4B1,U\u002B2116",
+    "sha256": "0eae4d81e3f62dfe8cf1d73c0a1430d3de0e94c7944d8527ab21c672435bff97"
+  },
+  {
+    "file": "Inter-400-greek-ext.ttf",
+    "family": "Inter",
+    "weight": "Regular",
+    "source": "https://assets.twitch.tv/assets/inter-greek-ext-variable-wghtOnly-normal-fc801027c1a9683d0098.woff2",
+    "unicodeRange": "U\u002B1F??",
+    "sha256": "a71fa60f14c24245738e2e2758be8400b66d6ca1016d940b549a6226bf493e85"
+  },
+  {
+    "file": "Inter-400-greek.ttf",
+    "family": "Inter",
+    "weight": "Regular",
+    "source": "https://assets.twitch.tv/assets/inter-greek-variable-wghtOnly-normal-437c5811bd5ec1a49373.woff2",
+    "unicodeRange": "U\u002B370-3FF",
+    "sha256": "e0fda492adb8db24a7909240c17bda6d546d6884212a77ba2218a8291c67ebb9"
+  },
+  {
+    "file": "Inter-400-vietnamese.ttf",
+    "family": "Inter",
+    "weight": "Regular",
+    "source": "https://assets.twitch.tv/assets/inter-vietnamese-variable-wghtOnly-normal-6ac2a69701b6a9cbd7aa.woff2",
+    "unicodeRange": "U\u002B102-103,U\u002B110-111,U\u002B128-129,U\u002B168-169,U\u002B1A0-1A1,U\u002B1AF-1B0,U\u002B1EA0-1EF9,U\u002B20AB",
+    "sha256": "f844ffa85c321b0ed2f40ebcbdaced203058714fb4916ef5d091e1db3372e226"
+  },
+  {
+    "file": "Inter-400-latin-ext.ttf",
+    "family": "Inter",
+    "weight": "Regular",
+    "source": "https://assets.twitch.tv/assets/inter-latin-ext-variable-wghtOnly-normal-67b34c7aa6f27e48a065.woff2",
+    "unicodeRange": "U\u002B100-24F,U\u002B259,U\u002B1E??,U\u002B2020,U\u002B20A0-20AB,U\u002B20AD-20CF,U\u002B2113,U\u002B2C60-2C7F,U\u002BA720-A7FF",
+    "sha256": "7299400bc3431f1adec9784df50fdba24a898a22cd8faea9146e77c427b87c6c"
+  },
+  {
+    "file": "Inter-400-latin.ttf",
+    "family": "Inter",
+    "weight": "Regular",
+    "source": "https://assets.twitch.tv/assets/inter-latin-variable-wghtOnly-normal-383d894ed1f69dd95820.woff2",
+    "unicodeRange": "U\u002B??,U\u002B131,U\u002B152-153,U\u002B2BB-2BC,U\u002B2C6,U\u002B2DA,U\u002B2DC,U\u002B2000-206F,U\u002B2074,U\u002B20AC,U\u002B2122,U\u002B2191,U\u002B2193,U\u002B2212,U\u002B2215,U\u002BFEFF,U\u002BFFFD",
+    "sha256": "1c0fb90b5569f108515914652db255a1152d006e60d61afdd342cc6cd7abc568"
+  },
+  {
+    "file": "Inter-700-cyrillic-ext.ttf",
+    "family": "Inter",
+    "weight": "Bold",
+    "source": "https://assets.twitch.tv/assets/inter-cyrillic-ext-variable-wghtOnly-normal-39fb6b9a2bf03fb4233a.woff2",
+    "unicodeRange": "U\u002B460-52F,U\u002B1C80-1C88,U\u002B20B4,U\u002B2DE0-2DFF,U\u002BA640-A69F,U\u002BFE2E-FE2F",
+    "sha256": "4071d1ef52c0b854537dfdb891053e7e23dbc53530d2f8401a734c7d9ea58ee0"
+  },
+  {
+    "file": "Inter-700-cyrillic.ttf",
+    "family": "Inter",
+    "weight": "Bold",
+    "source": "https://assets.twitch.tv/assets/inter-cyrillic-variable-wghtOnly-normal-6f38ebbb2587f3cc50d7.woff2",
+    "unicodeRange": "U\u002B400-45F,U\u002B490-491,U\u002B4B0-4B1,U\u002B2116",
+    "sha256": "0eae4d81e3f62dfe8cf1d73c0a1430d3de0e94c7944d8527ab21c672435bff97"
+  },
+  {
+    "file": "Inter-700-greek-ext.ttf",
+    "family": "Inter",
+    "weight": "Bold",
+    "source": "https://assets.twitch.tv/assets/inter-greek-ext-variable-wghtOnly-normal-fc801027c1a9683d0098.woff2",
+    "unicodeRange": "U\u002B1F??",
+    "sha256": "a71fa60f14c24245738e2e2758be8400b66d6ca1016d940b549a6226bf493e85"
+  },
+  {
+    "file": "Inter-700-greek.ttf",
+    "family": "Inter",
+    "weight": "Bold",
+    "source": "https://assets.twitch.tv/assets/inter-greek-variable-wghtOnly-normal-437c5811bd5ec1a49373.woff2",
+    "unicodeRange": "U\u002B370-3FF",
+    "sha256": "e0fda492adb8db24a7909240c17bda6d546d6884212a77ba2218a8291c67ebb9"
+  },
+  {
+    "file": "Inter-700-vietnamese.ttf",
+    "family": "Inter",
+    "weight": "Bold",
+    "source": "https://assets.twitch.tv/assets/inter-vietnamese-variable-wghtOnly-normal-6ac2a69701b6a9cbd7aa.woff2",
+    "unicodeRange": "U\u002B102-103,U\u002B110-111,U\u002B128-129,U\u002B168-169,U\u002B1A0-1A1,U\u002B1AF-1B0,U\u002B1EA0-1EF9,U\u002B20AB",
+    "sha256": "f844ffa85c321b0ed2f40ebcbdaced203058714fb4916ef5d091e1db3372e226"
+  },
+  {
+    "file": "Inter-700-latin-ext.ttf",
+    "family": "Inter",
+    "weight": "Bold",
+    "source": "https://assets.twitch.tv/assets/inter-latin-ext-variable-wghtOnly-normal-67b34c7aa6f27e48a065.woff2",
+    "unicodeRange": "U\u002B100-24F,U\u002B259,U\u002B1E??,U\u002B2020,U\u002B20A0-20AB,U\u002B20AD-20CF,U\u002B2113,U\u002B2C60-2C7F,U\u002BA720-A7FF",
+    "sha256": "7299400bc3431f1adec9784df50fdba24a898a22cd8faea9146e77c427b87c6c"
+  },
+  {
+    "file": "Inter-700-latin.ttf",
+    "family": "Inter",
+    "weight": "Bold",
+    "source": "https://assets.twitch.tv/assets/inter-latin-variable-wghtOnly-normal-383d894ed1f69dd95820.woff2",
+    "unicodeRange": "U\u002B??,U\u002B131,U\u002B152-153,U\u002B2BB-2BC,U\u002B2C6,U\u002B2DA,U\u002B2DC,U\u002B2000-206F,U\u002B2074,U\u002B20AC,U\u002B2122,U\u002B2191,U\u002B2193,U\u002B2212,U\u002B2215,U\u002BFEFF,U\u002BFFFD",
+    "sha256": "1c0fb90b5569f108515914652db255a1152d006e60d61afdd342cc6cd7abc568"
+  },
+  {
+    "file": "Arial-Italic.ttf",
+    "family": "Arial",
+    "weight": "Italic",
+    "source": "ariali.ttf",
+    "collectionIndex": 0,
+    "sha256": "86b32db9a06f9694e2a3760c42e5117bcdc5cc1255bb5186ca8ce0305e22f288"
+  },
+  {
+    "file": "Arial-BoldItalic.ttf",
+    "family": "Arial",
+    "weight": "BoldItalic",
+    "source": "arialbi.ttf",
+    "collectionIndex": 0,
+    "sha256": "267a411525980d648f10a7222a6ff1ebe4d4feeefbf9b3100cae2b5cfab5594a"
+  },
+  {
+    "file": "Calibri-Italic.ttf",
+    "family": "Calibri",
+    "weight": "Italic",
+    "source": "calibrii.ttf",
+    "collectionIndex": 0,
+    "sha256": "7f150e9eabe5db3e1b0f9469dca5c96176bc2fbb306dc9d48b7029dc69c52763"
+  },
+  {
+    "file": "Calibri-BoldItalic.ttf",
+    "family": "Calibri",
+    "weight": "BoldItalic",
+    "source": "calibriz.ttf",
+    "collectionIndex": 0,
+    "sha256": "760539bfedbe24e7853ca8a621d9cb1f3de52036c116e81aae36b33c4ab60a7c"
+  },
+  {
+    "file": "PalatinoLinotype-Italic.ttf",
+    "family": "Palatino Linotype",
+    "weight": "Italic",
+    "source": "palai.ttf",
+    "collectionIndex": 0,
+    "sha256": "99f0af2d1941707fecda23da38bafbed5144a73a3720d773c05b9d4c445920ed"
+  },
+  {
+    "file": "PalatinoLinotype-BoldItalic.ttf",
+    "family": "Palatino Linotype",
+    "weight": "BoldItalic",
+    "source": "palabi.ttf",
+    "collectionIndex": 0,
+    "sha256": "d0e722b91ffd5391cc2e7d6e976f274d5aee9fe0b8d0fedfffe093763e695cde"
+  },
+  {
+    "file": "SegoeUI-Italic.ttf",
+    "family": "Segoe UI",
+    "weight": "Italic",
+    "source": "segoeuii.ttf",
+    "collectionIndex": 0,
+    "sha256": "be525b9a6d307d73c23908cd269be9be754210a9d93c0c1eaaa126d2a174290a"
+  },
+  {
+    "file": "SegoeUI-BoldItalic.ttf",
+    "family": "Segoe UI",
+    "weight": "BoldItalic",
+    "source": "segoeuiz.ttf",
+    "collectionIndex": 0,
+    "sha256": "c886161fa6d102090ff992519b6fdc73057a0e838e9d40b27e187e9e61300a92"
+  },
+  {
+    "file": "TimesNewRoman-Italic.ttf",
+    "family": "Times New Roman",
+    "weight": "Italic",
+    "source": "timesi.ttf",
+    "collectionIndex": 0,
+    "sha256": "e7f7a88b65188328aea58670f955022e23c712f55679524729da1e4e03c49d88"
+  },
+  {
+    "file": "TimesNewRoman-BoldItalic.ttf",
+    "family": "Times New Roman",
+    "weight": "BoldItalic",
+    "source": "timesbi.ttf",
+    "collectionIndex": 0,
+    "sha256": "3a29d114cb5229e8dbda5bef6c69be4a210a13b7277de4d66e9fc86963226f6c"
+  }
+]

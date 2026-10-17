@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+    <ProjectReference Include="../../MessageHeightTwitch.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../Tests/Utils/Fixture.cs" Link="TestData/Fixture.cs" />
+    <Compile Include="../../Tests/Utils/MeasurementTestData.cs" Link="TestData/MeasurementTestData.cs" />
+    <Compile Include="../../Tests/Utils/CapturedEmoteCatalog.cs" Link="TestData/CapturedEmoteCatalog.cs" />
+    <None Include="../../Tests/Fixtures/text-measurements.json;../../Tests/Fixtures/ffz-emoji-v2-.json" Link="Fixtures/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
