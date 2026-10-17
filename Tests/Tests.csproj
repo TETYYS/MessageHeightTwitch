@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-
     <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
     <RunSettingsFilePath Condition="'$(OS)' == 'Windows_NT' and '$(PlatformTarget)' != 'x86' and '$(RuntimeIdentifier)' != 'win-x86'">$(MSBuildProjectDirectory)\TestExplorer.runsettings</RunSettingsFilePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(PlatformTarget)' == 'x86' or '$(PlatformTarget)' == 'x64'">
@@ -25,9 +25,6 @@
 
   <ItemGroup>
     <None Include="..\Fonts\**\*.ttf;..\Fonts\**\*.otf" Link="Fonts\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="charmap.bin.gz">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
 	<None Update="Fixtures\ffz-emoji-v2-.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
