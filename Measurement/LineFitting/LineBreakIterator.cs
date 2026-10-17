@@ -35,11 +35,11 @@ internal static class LineBreakIterator
     /// <summary>
     /// Includes the isolated object following a text item in its paragraph's break opportunities.
     /// </summary>
-    internal static ReadOnlySpan<char> WithFollowingObject(ReadOnlySpan<char> Text, LineBreakingWorkspace Workspace)
+    internal static ReadOnlySpan<char> WithFollowingObject(ReadOnlySpan<char> Text, LineBreakingWorkspace Ws)
     {
         const string INLINE_OBJECT = "\u2066\uFFFC\u2069";
-        PooledBuffers.Ensure(ref Workspace.InlineText, Text.Length + INLINE_OBJECT.Length);
-        var result = Workspace.InlineText.AsSpan(0, Text.Length + INLINE_OBJECT.Length);
+        PooledBuffers.Ensure(ref Ws.InlineText, Text.Length + INLINE_OBJECT.Length);
+        var result = Ws.InlineText.AsSpan(0, Text.Length + INLINE_OBJECT.Length);
         Text.CopyTo(result);
         INLINE_OBJECT.CopyTo(result[Text.Length..]);
         return result;
@@ -48,11 +48,10 @@ internal static class LineBreakIterator
     /// <summary>
     /// Collects normal or break-all opportunities, using shaped clusters for spaces that carry marks.
     /// </summary>
-    internal static void Fill(ReadOnlySpan<char> Text, ReadOnlySpan<ClusterMark> Marks, bool BreakAll,
-        LineBreakingWorkspace Workspace, List<(int Start, int End)> Result, int StartOffset = 0)
+    internal static void Fill(ReadOnlySpan<char> Text, ReadOnlySpan<ClusterMark> Marks, bool BreakAll, LineBreakingWorkspace Ws, List<(int Start, int End)> Result, int StartOffset = 0)
     {
-        var icu = Workspace.Boundaries;
-        Workspace.Iterators.GetBreaks(Text, false, icu, StartOffset);
+        var icu = Ws.Boundaries;
+        Ws.Iterators.GetBreaks(Text, false, icu, StartOffset);
         Result.Clear();
 
         var start = StartOffset;
@@ -74,7 +73,7 @@ internal static class LineBreakIterator
                 }
                 breaks = true;
             } else {
-                var fast = AsciiLineBreakPairs.Fast(x > StartOffset + 1 ? Text[x - 2] : '\0', last, ch, Workspace);
+                var fast = AsciiLineBreakPairs.Fast(x > StartOffset + 1 ? Text[x - 2] : '\0', last, ch, Ws);
 
                 if (fast == FastBreak.Break || BreakAll && !char.IsLowSurrogate(ch) && AsciiLineBreakPairs.BreaksAll(Text[StartOffset..], x - StartOffset))
                     breaks = true;

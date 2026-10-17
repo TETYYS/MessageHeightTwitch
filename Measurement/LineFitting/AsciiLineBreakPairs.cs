@@ -31,7 +31,7 @@ internal static class AsciiLineBreakPairs
     private static readonly CachedBool[] Pairs = new CachedBool[COUNT * COUNT];
 
     /// <summary>Blink's ShouldBreakFast.</summary>
-    internal static FastBreak Fast(char LastLast, char Last, char Ch, LineBreakingWorkspace Workspace)
+    internal static FastBreak Fast(char LastLast, char Last, char Ch, LineBreakingWorkspace Ws)
     {
         if (Last < MIN_CHAR || Ch < MIN_CHAR)
             return FastBreak.NoBreak;
@@ -49,7 +49,7 @@ internal static class AsciiLineBreakPairs
         ref var pair = ref Pairs[(Last - MIN_CHAR) * COUNT + Ch - MIN_CHAR];
 
         if (pair == CachedBool.Unknown)
-            pair = Compute(Last, Ch, Workspace) ? CachedBool.True : CachedBool.False;
+            pair = Compute(Last, Ch, Ws) ? CachedBool.True : CachedBool.False;
         return pair == CachedBool.True ? FastBreak.Break : FastBreak.NoBreak;
     }
 
@@ -60,7 +60,7 @@ internal static class AsciiLineBreakPairs
     /// U+FFFC: a break unless the text ends in a character that holds on to what follows (an opening bracket, a
     /// quotation mark, a no-break space, a word joiner).
     /// </summary>
-    internal static bool BreaksBeforeObject(ReadOnlySpan<char> Text, LineBreakingWorkspace Workspace)
+    internal static bool BreaksBeforeObject(ReadOnlySpan<char> Text, LineBreakingWorkspace Ws)
     {
         if (Text[^1] is ' ' or '\t' or '\n')
             return true;
@@ -75,8 +75,8 @@ internal static class AsciiLineBreakPairs
         context.CopyTo(buffer);
 
         buffer[^1] = (char)0xFFFC;
-        var boundaries = Workspace.PairBoundaries;
-        Workspace.Iterators.GetBreaks(buffer, false, boundaries);
+        var boundaries = Ws.PairBoundaries;
+        Ws.Iterators.GetBreaks(buffer, false, boundaries);
 
         foreach (var boundary in boundaries)
             if (boundary.End == context.Length)
@@ -176,15 +176,15 @@ internal static class AsciiLineBreakPairs
     /// <summary>Blink's LineBreakPropertyValue: ICU's line breaking class, with '+' tailored to AL as IE does.</summary>
     private static int LineBreakClass(int Codepoint) => Codepoint == '+' ? ALPHABETIC : Icu.Character.GetIntPropertyValue(Codepoint, Icu.Character.UProperty.LINE_BREAK);
 
-    private static bool Compute(char Last, char Ch, LineBreakingWorkspace Workspace)
+    private static bool Compute(char Last, char Ch, LineBreakingWorkspace Ws)
     {
         if (Last <= 0x7F && Ch <= 0x7F)
             return Ascii(Last, Ch);
 
         Span<char> text = [Last, Ch];
 
-        var boundaries = Workspace.PairBoundaries;
-        Workspace.Iterators.GetBreaks(text, false, boundaries);
+        var boundaries = Ws.PairBoundaries;
+        Ws.Iterators.GetBreaks(text, false, boundaries);
         return boundaries.Count > 1;
     }
 

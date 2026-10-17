@@ -22,20 +22,20 @@ internal ref struct ChatParagraphBuilder
     private readonly ReadOnlySpan<char> AuthorName;
     private readonly PARAGRAPH_REGION AuthorNameRegion;
     private readonly ReadOnlySpan<char> LoginSuffix;
-    private readonly CollectionWorkspace Workspace;
+    private readonly CollectionWorkspace Ws;
     private readonly InlineItemsData Paragraph;
     private readonly bool IsAction;
     private readonly int ParagraphLength { get => Paragraph.Length; set => Paragraph.Length = value; }
     private readonly int BodyStart { get => Paragraph.BodyStart; set => Paragraph.BodyStart = value; }
 
-    internal ChatParagraphBuilder(RewrittenMessage Message, ReadOnlySpan<char> AuthorName, PARAGRAPH_REGION AuthorNameRegion, ReadOnlySpan<char> LoginSuffix, CollectionWorkspace Workspace, InlineItemsData Paragraph, bool IsAction = false)
+    internal ChatParagraphBuilder(RewrittenMessage Message, ReadOnlySpan<char> AuthorName, PARAGRAPH_REGION AuthorNameRegion, ReadOnlySpan<char> LoginSuffix, CollectionWorkspace Ws, InlineItemsData Paragraph, bool IsAction = false)
     {
         this.Message = Message;
         Input = Message.Text;
         this.AuthorName = AuthorName;
         this.AuthorNameRegion = AuthorNameRegion;
         this.LoginSuffix = LoginSuffix;
-        this.Workspace = Workspace;
+        this.Ws = Ws;
         this.Paragraph = Paragraph;
         this.IsAction = IsAction;
     }
@@ -62,13 +62,13 @@ internal ref struct ChatParagraphBuilder
         AppendText(separator, 0, separator.Length, false, false, PARAGRAPH_REGION.SEPARATOR, ref previousSpace);
         BodyStart = ParagraphLength;
 
-        for (int unit = 0, image = 0; unit < Workspace.Items.Count || image < Workspace.Objects.Count;) {
-            if (image < Workspace.Objects.Count && (unit == Workspace.Items.Count || Workspace.Objects[image].Start < Workspace.Items[unit].Start)) {
-                var (source, box) = Workspace.Objects[image++];
+        for (int unit = 0, image = 0; unit < Ws.Items.Count || image < Ws.Objects.Count;) {
+            if (image < Ws.Objects.Count && (unit == Ws.Items.Count || Ws.Objects[image].Start < Ws.Items[unit].Start)) {
+                var (source, box) = Ws.Objects[image++];
                 AppendImage(source, box);
                 previousSpace = false;
             } else {
-                var item = Workspace.Items[unit++];
+                var item = Ws.Items[unit++];
                 AppendText(Input, item.Start, item.End, item.Bold, false, PARAGRAPH_REGION.BODY, ref previousSpace);
             }
         }
@@ -116,9 +116,9 @@ internal ref struct ChatParagraphBuilder
     /// </summary>
     private readonly void FindMessageItems()
     {
-        var objects = Workspace.Objects;
+        var objects = Ws.Objects;
         objects.Clear();
-        Workspace.Items.Clear();
+        Ws.Items.Clear();
 
         foreach (var (start, image) in Message.Emotes)
             objects.Add((start, image));
@@ -165,7 +165,7 @@ internal ref struct ChatParagraphBuilder
     /// </summary>
     private readonly void AddItemText(int Start, int End, bool Bold)
     {
-        var items = Workspace.Items;
+        var items = Ws.Items;
         if (items.Count > 0 && items[^1].End == Start && items[^1].Bold == Bold)
             items[^1] = (items[^1].Start, End, Bold);
         else
@@ -177,9 +177,9 @@ internal ref struct ChatParagraphBuilder
     /// </summary>
     private readonly ReadOnlySpan<(int Start, EmoteLayout Image)> ObjectsIn(int Start, int End)
     {
-        var objects = CollectionsMarshal.AsSpan(Workspace.Objects);
+        var objects = CollectionsMarshal.AsSpan(Ws.Objects);
 
-        var first = Workspace.Objects.BinarySearch((Start, default), ObjectStartComparer);
+        var first = Ws.Objects.BinarySearch((Start, default), ObjectStartComparer);
         if (first < 0)
             first = ~first;
         var last = first;

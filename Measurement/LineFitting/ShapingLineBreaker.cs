@@ -14,15 +14,15 @@ namespace MessageHeightTwitch.Measurement.LineFitting;
 internal ref struct ShapingLineBreaker
 {
     private TextWidths Widths;
-    private readonly LineBreakingWorkspace Workspace;
+    private readonly LineBreakingWorkspace Ws;
     private readonly ReadOnlySpan<char> Text => Widths.Text;
     private readonly int Start => Widths.Start;
     private readonly bool Rtl => Widths.Rtl;
 
-    internal ShapingLineBreaker(TextWidths Widths, LineBreakingWorkspace Workspace)
+    internal ShapingLineBreaker(TextWidths Widths, LineBreakingWorkspace Ws)
     {
         this.Widths = Widths;
-        this.Workspace = Workspace;
+        this.Ws = Ws;
     }
 
     /// <summary>A selected fragment, with its break opportunity separate from its non-hangable end.</summary>
@@ -217,26 +217,26 @@ internal ref struct ShapingLineBreaker
     {
         if (Anywhere && !GraphemesReady) {
             if (ParagraphText.IsEmpty)
-                Workspace.Iterators.GetBreaks(Text, true, Workspace.ItemGraphemes);
+                Ws.Iterators.GetBreaks(Text, true, Ws.ItemGraphemes);
             else {
-                var graphemes = Workspace.ParagraphGraphemes;
+                var graphemes = Ws.ParagraphGraphemes;
                 if (graphemes.Count == 0)
-                    Workspace.Iterators.GetBreaks(ParagraphText, true, graphemes, Workspace.StartOffset);
-                LineBreakIterator.Project(graphemes, ParagraphOffset, Text.Length, Workspace.ItemGraphemes);
+                    Ws.Iterators.GetBreaks(ParagraphText, true, graphemes, Ws.StartOffset);
+                LineBreakIterator.Project(graphemes, ParagraphOffset, Text.Length, Ws.ItemGraphemes);
             }
             GraphemesReady = true;
         } else if (!Anywhere && !LineBreaksReady) {
             if (ParagraphText.IsEmpty)
-                FillLineBreaks(ObjectFollows ? LineBreakIterator.WithFollowingObject(Text, Workspace) : Text, Workspace.ItemBreaks);
+                FillLineBreaks(ObjectFollows ? LineBreakIterator.WithFollowingObject(Text, Ws) : Text, Ws.ItemBreaks);
             else {
-                var breaks = BreakAll ? Workspace.BreakAllBreaks : Workspace.NormalBreaks;
+                var breaks = BreakAll ? Ws.BreakAllBreaks : Ws.NormalBreaks;
                 if (breaks.Count == 0)
-                    LineBreakIterator.Fill(ParagraphText, ParagraphMarks, BreakAll, Workspace, breaks, Workspace.StartOffset);
-                LineBreakIterator.Project(breaks, ParagraphOffset, Text.Length, Workspace.ItemBreaks);
+                    LineBreakIterator.Fill(ParagraphText, ParagraphMarks, BreakAll, Ws, breaks, Ws.StartOffset);
+                LineBreakIterator.Project(breaks, ParagraphOffset, Text.Length, Ws.ItemBreaks);
             }
             LineBreaksReady = true;
         }
-        return Anywhere ? Workspace.ItemGraphemes : Workspace.ItemBreaks;
+        return Anywhere ? Ws.ItemGraphemes : Ws.ItemBreaks;
     }
 
     /// <summary>
@@ -246,7 +246,7 @@ internal ref struct ShapingLineBreaker
     /// </summary>
     private void FillLineBreaks(ReadOnlySpan<char> BreakText, List<(int Start, int End)> Result)
     {
-        LineBreakIterator.Fill(BreakText, Widths.BreakMarks(), BreakAll, Workspace, Result);
+        LineBreakIterator.Fill(BreakText, Widths.BreakMarks(), BreakAll, Ws, Result);
     }
 
 }

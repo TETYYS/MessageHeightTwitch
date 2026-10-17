@@ -24,8 +24,7 @@ public class MessageHeightTestDataBenchmarks
          * Project references copy the fonts and native libraries into the benchmark output.
          */
         Directory.SetCurrentDirectory(AppContext.BaseDirectory);
-        var cases = MeasurementTestData.Read<TextMeasurementCase>("text-measurements.json")
-            .Where(test => !AsciiOnly || test.Text.All(c => c <= 0x7f)).ToList();
+        var cases = MeasurementTestData.Read<TextMeasurementCase>("text-measurements.json").Where(test => !AsciiOnly || test.Text.All(c => c <= 0x7f)).ToList();
         _messages = new PreparedMessage[cases.Count];
 
         for (var x = 0; x < cases.Count; x++)
@@ -37,12 +36,10 @@ public class MessageHeightTestDataBenchmarks
 
             // Exercise every input and initialize lazy font/shaper caches before timing.
             var height = measurer.CalculateMessageHeightEx(test.Text, "tetyys", test.DisplayName, parameters);
-            if (test.Height is { } expected && height != expected)
-                throw new InvalidDataException(
-                    $"{test.Name}: expected height {expected}, measured {height}.");
+            if (test.Height is { } expected && height != expected) {
+                throw new InvalidDataException($"{test.Name}: expected height {expected}, measured {height}.");
+            }
         }
-
-        Console.WriteLine($"Loaded and validated {_messages.Length} messages from text-measurements.json. One operation measures the entire corpus.");
     }
 
     [Benchmark]

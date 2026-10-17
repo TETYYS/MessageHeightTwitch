@@ -22,18 +22,18 @@ internal readonly ref struct HarfBuzzShaper(ReadOnlySpan<char> Text)
     /// Supplied <paramref name="Bidi"/> runs are projected from the paragraph; standalone probes resolve
     /// their own text.
     /// </summary>
-    internal ClassifiedText Shape(Font Font, UScript.ScriptContext Context, ShapingWorkspace Workspace, ReadOnlySpan<(int End, HarfBuzzSharp.Direction Direction)> Bidi = default)
+    internal ClassifiedText Shape(Font Font, UScript.ScriptContext Context, ShapingWorkspace Ws, ReadOnlySpan<(int End, HarfBuzzSharp.Direction Direction)> Bidi = default)
     {
-        Workspace.ProbeScript.CopyFrom(Context);
-        EmojiPresentation.FillRuns(Workspace.ProbeScript.Segment(Text, Workspace.Scripts, Workspace.Scratch), Workspace.Presentations);
+        Ws.ProbeScript.CopyFrom(Context);
+        EmojiPresentation.FillRuns(Ws.ProbeScript.Segment(Text, Ws.Scripts, Ws.Scratch), Ws.Presentations);
         if (Bidi.IsEmpty)
-            Workspace.BidiResolver.GetBidi(Text, Workspace.Bidi);
+            Ws.BidiResolver.GetBidi(Text, Ws.Bidi);
         else {
-            Workspace.Bidi.Clear();
+            Ws.Bidi.Clear();
             foreach (var run in Bidi)
-                Workspace.Bidi.Add(run);
+                Ws.Bidi.Add(run);
         }
-        return ClassifyRuns(Font, Workspace);
+        return ClassifyRuns(Font, Ws);
     }
 
     /// <summary>
@@ -41,63 +41,63 @@ internal readonly ref struct HarfBuzzShaper(ReadOnlySpan<char> Text)
     /// reshapes (LineBreaker::ShapeText): a fallback iterator of its own, hinted by this text only, in the item's
     /// <paramref name="Script"/> and <paramref name="Direction"/>.
     /// </summary>
-    internal ClassifiedText ShapeSegment(Font Font, UScriptCode Script, HarfBuzzSharp.Direction Direction, ShapingWorkspace Workspace)
+    internal ClassifiedText ShapeSegment(Font Font, UScriptCode Script, HarfBuzzSharp.Direction Direction, ShapingWorkspace Ws)
     {
-        Workspace.Scratch.Ensure(Text.Length);
+        Ws.Scratch.Ensure(Text.Length);
         var runes = 0;
         foreach (var rune in Text.EnumerateRunes())
-            Workspace.Scratch.Runes[runes++] = rune;
-        EmojiPresentation.FillRuns(Workspace.Scratch.Runes.AsSpan(0, runes), Workspace.Presentations);
-        Workspace.Scripts.Clear();
-        Workspace.Scripts.Add((0..Text.Length, Script));
-        Workspace.Bidi.Clear();
-        Workspace.Bidi.Add((Text.Length, Direction));
-        return ClassifyRuns(Font, Workspace);
+            Ws.Scratch.Runes[runes++] = rune;
+        EmojiPresentation.FillRuns(Ws.Scratch.Runes.AsSpan(0, runes), Ws.Presentations);
+        Ws.Scripts.Clear();
+        Ws.Scripts.Add((0..Text.Length, Script));
+        Ws.Bidi.Clear();
+        Ws.Bidi.Add((Text.Length, Direction));
+        return ClassifyRuns(Font, Ws);
     }
 
     /// <summary>The font runs of a text whose script, presentation and bidi runs are in the workspace.</summary>
-    private ClassifiedText ClassifyRuns(Font Font, ShapingWorkspace Workspace)
+    private ClassifiedText ClassifyRuns(Font Font, ShapingWorkspace Ws)
     {
         var Bold = Font.Bold;
         var Fonts = Font.FallbackList;
-        Workspace.Runs.Clear();
+        Ws.Runs.Clear();
         if (Text.IsEmpty) {
-            return new(Text, CollectionsMarshal.AsSpan(Workspace.Runs), CollectionsMarshal.AsSpan(Workspace.Bidi)) {
+            return new(Text, CollectionsMarshal.AsSpan(Ws.Runs), CollectionsMarshal.AsSpan(Ws.Bidi)) {
                 Font = Font
             };
         }
 
         // Inter covers printable ASCII. This shortcut retains the fixed-font contract of AsciiFastPath.
-        var ascii = Workspace.Scripts.Count == 1 && Workspace.Presentations.Count == 1;
+        var ascii = Ws.Scripts.Count == 1 && Ws.Presentations.Count == 1;
         foreach (var ch in Text)
             ascii &= ch is >= ' ' and <= '~';
 
         if (ascii) {
-            Workspace.Runs.Add(new(0..Text.Length, (Bold ? Fonts.AsciiBold : Fonts.AsciiRegular).Typeface, Workspace.Scripts[0].Script));
+            Ws.Runs.Add(new(0..Text.Length, (Bold ? Fonts.AsciiBold : Fonts.AsciiRegular).Typeface, Ws.Scripts[0].Script));
         } else {
             for (int start = 0, script = 0, presentation = 0, bidi = 0; start < Text.Length;) {
-                var end = Math.Min(Workspace.Scripts[script].Range.End.Value, Math.Min(Workspace.Presentations[presentation].Range.End.Value, Workspace.Bidi[bidi].End));
-                ShapeSegment(Text, start..end, Workspace.Scripts[script].Script, Workspace.Presentations[presentation].Priority, Workspace.Bidi[bidi].Direction, Bold, Font.Italic, Workspace, Fonts);
+                var end = Math.Min(Ws.Scripts[script].Range.End.Value, Math.Min(Ws.Presentations[presentation].Range.End.Value, Ws.Bidi[bidi].End));
+                ShapeSegment(Text, start..end, Ws.Scripts[script].Script, Ws.Presentations[presentation].Priority, Ws.Bidi[bidi].Direction, Bold, Font.Italic, Ws, Fonts);
 
-                if (end == Workspace.Scripts[script].Range.End.Value)
+                if (end == Ws.Scripts[script].Range.End.Value)
                     script++;
-                if (end == Workspace.Presentations[presentation].Range.End.Value)
+                if (end == Ws.Presentations[presentation].Range.End.Value)
                     presentation++;
-                if (end == Workspace.Bidi[bidi].End)
+                if (end == Ws.Bidi[bidi].End)
                     bidi++;
 
                 start = end;
             }
-            Workspace.Runs.Sort(static (a, b) => a.Range.Start.Value.CompareTo(b.Range.Start.Value));
+            Ws.Runs.Sort(static (a, b) => a.Range.Start.Value.CompareTo(b.Range.Start.Value));
         }
         float? shapedWidth = null;
 
-        if (!ascii && Workspace.Runs.Count == 1 && Workspace.Scripts.Count == 1 && Workspace.Presentations.Count == 1 && Workspace.Bidi.Count == 1 &&
-            FontCache.GetShaper(Workspace.Runs[0].TypeFace).IsUnicodeRangeSubset && Workspace.Runs[0].ShapingRange is { } source && Workspace.Runs[0].Range.Equals(source) &&
-            Workspace.LastShapedFont == Workspace.Runs[0].TypeFace && Workspace.LastShapedRange.Equals(source))
-            shapedWidth = HarfBuzz.FixedToFloat(TextWidths.SnapFixed(FontCache.GetShaper(Workspace.Runs[0].TypeFace).ShapedFixedWidth(Workspace.Buffer)));
+        if (!ascii && Ws.Runs.Count == 1 && Ws.Scripts.Count == 1 && Ws.Presentations.Count == 1 && Ws.Bidi.Count == 1 &&
+            FontCache.GetShaper(Ws.Runs[0].TypeFace).IsUnicodeRangeSubset && Ws.Runs[0].ShapingRange is { } source && Ws.Runs[0].Range.Equals(source) &&
+            Ws.LastShapedFont == Ws.Runs[0].TypeFace && Ws.LastShapedRange.Equals(source))
+            shapedWidth = HarfBuzz.FixedToFloat(TextWidths.SnapFixed(FontCache.GetShaper(Ws.Runs[0].TypeFace).ShapedFixedWidth(Ws.Buffer)));
 
-        return new(Text, CollectionsMarshal.AsSpan(Workspace.Runs), CollectionsMarshal.AsSpan(Workspace.Bidi), shapedWidth) { Font = Font };
+        return new(Text, CollectionsMarshal.AsSpan(Ws.Runs), CollectionsMarshal.AsSpan(Ws.Bidi), shapedWidth) { Font = Font };
     }
 
     /// <summary>
@@ -149,35 +149,35 @@ internal readonly ref struct HarfBuzzShaper(ReadOnlySpan<char> Text)
         TryCandidate(Text, scratch.Tried[0], Script, Direction, Workspace, CheckVariationSelectors: false, IsLastFont: true);
     }
 
-    private static void TryCandidate(ReadOnlySpan<char> Text, Typeface Candidate, UScriptCode Script, HarfBuzzSharp.Direction Direction, ShapingWorkspace Workspace, bool CheckVariationSelectors, bool IsLastFont = false)
+    private static void TryCandidate(ReadOnlySpan<char> Text, Typeface Candidate, UScriptCode Script, HarfBuzzSharp.Direction Direction, ShapingWorkspace Ws, bool CheckVariationSelectors, bool IsLastFont = false)
     {
-        var scratch = Workspace;
+        var scratch = Ws;
         scratch.Tried.Add(Candidate);
         scratch.Next.Clear();
         var shaper = FontCache.GetShaper(Candidate);
 
         foreach (var range in scratch.Pending) {
             var nextStart = scratch.Next.Count;
-            shaper.ShapeRange(Text, range, Workspace.Buffer, Direction, default, Script);
+            shaper.ShapeRange(Text, range, Ws.Buffer, Direction, default, Script);
 
             scratch.LastShapedFont = Candidate;
             scratch.LastShapedRange = range;
 
-            var infos = Workspace.Buffer.GetGlyphInfoSpan();
+            var infos = Ws.Buffer.GetGlyphInfoSpan();
             var rtl = Direction == HarfBuzzSharp.Direction.RightToLeft;
             var step = rtl ? -1 : 1;
             var glyph = rtl ? infos.Length - 1 : 0;
             var sliceStart = range.Start.Value;
             bool? sliceSupported = null;
 
-            static void commitSlice(Range Slice, bool Supported, Range ShapingRange, Typeface Candidate, UScriptCode Script, ShapingWorkspace Workspace)
+            static void commitSlice(Range Slice, bool Supported, Range ShapingRange, Typeface Candidate, UScriptCode Script, ShapingWorkspace Ws)
             {
                 if (Supported)
-                    Workspace.Runs.Add(new(Slice, Candidate, Script) {
+                    Ws.Runs.Add(new(Slice, Candidate, Script) {
                         ShapingRange = ShapingRange
                     });
                 else
-                    Workspace.Next.Add(Slice);
+                    Ws.Next.Add(Slice);
             }
 
             while (glyph >= 0 && glyph < infos.Length) {
@@ -195,7 +195,7 @@ internal readonly ref struct HarfBuzzShaper(ReadOnlySpan<char> Text)
                     supported &= shaper.SupportsVariationSelectors(Text[start..end]);
 
                 if (sliceSupported != null && sliceSupported != supported) {
-                    commitSlice(sliceStart..start, sliceSupported.Value, range, Candidate, Script, Workspace);
+                    commitSlice(sliceStart..start, sliceSupported.Value, range, Candidate, Script, Ws);
                     sliceStart = start;
                 }
 
@@ -203,9 +203,9 @@ internal readonly ref struct HarfBuzzShaper(ReadOnlySpan<char> Text)
             }
 
             if (sliceSupported != null)
-                commitSlice(sliceStart..range.End.Value, sliceSupported.Value, range, Candidate, Script, Workspace);
+                commitSlice(sliceStart..range.End.Value, sliceSupported.Value, range, Candidate, Script, Ws);
             else
-                Workspace.Runs.Add(new(range, Candidate, Script) { ShapingRange = range });
+                Ws.Runs.Add(new(range, Candidate, Script) { ShapingRange = range });
 
             // Blink extracts in HarfBuzz's visual glyph order. Keep the unresolved RTL slices in that
             // order too, because the next system fallback hint comes from the front of this queue.

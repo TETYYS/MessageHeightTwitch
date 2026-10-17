@@ -19,19 +19,18 @@ internal readonly ref struct ParagraphShaper
     private const int CONTEXT_LENGTH = 5;
     private readonly FontFallbackList Fonts;
     private readonly InlineItemsData Paragraph;
-    private readonly ParagraphShapingWorkspace Workspace;
+    private readonly ParagraphShapingWorkspace Ws;
     private readonly ShapingWorkspace Shaping;
     private readonly Range? LoginRange;
     private ReadOnlySpan<char> Text => Paragraph.Text;
     private int ParagraphLength => Paragraph.Length;
     private bool AsciiMessage => Paragraph.Ascii;
 
-    internal ParagraphShaper(FontFallbackList Fonts, InlineItemsData Paragraph, ParagraphShapingWorkspace Workspace,
-        ShapingWorkspace Shaping, Range? LoginRange = null)
+    internal ParagraphShaper(FontFallbackList Fonts, InlineItemsData Paragraph, ParagraphShapingWorkspace Ws, ShapingWorkspace Shaping, Range? LoginRange = null)
     {
         this.Fonts = Fonts;
         this.Paragraph = Paragraph;
-        this.Workspace = Workspace;
+        this.Ws = Ws;
         this.Shaping = Shaping;
         this.LoginRange = LoginRange;
     }
@@ -63,7 +62,7 @@ internal readonly ref struct ParagraphShaper
             first = last;
         }
 
-        Workspace.Script.Reset();
+        Ws.Script.Reset();
         for (var index = 0; index < groups.Count; index++) {
             var group = groups[index];
             var text = Text[group.Start..group.End];
@@ -81,8 +80,8 @@ internal readonly ref struct ParagraphShaper
         var group = Paragraph.Groups[Index];
         var text = Text[group.Start..group.End];
 
-        Paragraph.SliceBidi(group.Start, group.End, Workspace.Bidi, MergeDirections: true);
-        var classified = new HarfBuzzShaper(text).Shape(group.Font, Workspace.Script, Shaping, CollectionsMarshal.AsSpan(Workspace.Bidi));
+        Paragraph.SliceBidi(group.Start, group.End, Ws.Bidi, MergeDirections: true);
+        var classified = new HarfBuzzShaper(text).Shape(group.Font, Ws.Script, Shaping, CollectionsMarshal.AsSpan(Ws.Bidi));
         if (CollectRuns) {
             foreach (var run in classified.Runs) {
                 Paragraph.Runs.Add(run with {
@@ -100,7 +99,7 @@ internal readonly ref struct ParagraphShaper
         var marked = !AllowAscii || (login ? !table.TryFillLoginPrefixes(text, positions) : !AsciiMessage || !table.TryFillPrefixes(text, positions));
         if (marked) {
             Span<char> scratch = stackalloc char[CONTEXT_LENGTH];
-            var widths = new TextWidths(classified, Shaping, Workspace.Widths, Before: Paragraph.ContextBefore(group.Start, scratch));
+            var widths = new TextWidths(classified, Shaping, Ws.Widths, Before: Paragraph.ContextBefore(group.Start, scratch));
             widths.FillPositions(positions, Paragraph.Marks.AsSpan(group.Start, text.Length));
         } else
             Paragraph.Marks.AsSpan(group.Start, text.Length).Fill(ClusterMark.Safe);
@@ -169,7 +168,7 @@ internal readonly ref struct ParagraphShaper
         var item = Paragraph.LineItems[Item];
         if (item.Marked || item.Image != null)
             return;
-        Workspace.Script.Reset();
+        Ws.Script.Reset();
         for (var index = 0; index < item.Group; index++) {
             var previous = Paragraph.Groups[index];
             AdvanceScript(Text[previous.Start..previous.End]);
@@ -183,9 +182,9 @@ internal readonly ref struct ParagraphShaper
     private readonly void AdvanceScript(ReadOnlySpan<char> Part)
     {
         if (AsciiMessage)
-            Workspace.Script.AdvanceAsciiMessage(Part);
+            Ws.Script.AdvanceAsciiMessage(Part);
         else
-            Workspace.Script.Segment(Part, Shaping.Scripts, Shaping.Scratch);
+            Ws.Script.Segment(Part, Shaping.Scripts, Shaping.Scratch);
     }
 
 

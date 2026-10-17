@@ -21,19 +21,18 @@ internal readonly ref struct ParagraphLineBreaker
     private readonly InlineItemsData Paragraph;
     private readonly ParagraphShaper Shaper;
     private readonly ShapingWorkspace Shaping;
-    private readonly LineBreakingWorkspace Workspace;
+    private readonly LineBreakingWorkspace Ws;
     private readonly float AvailableWidth;
     private readonly bool EmoteMargin;
     private ReadOnlySpan<char> Text => Paragraph.Text;
     private int ParagraphLength => Paragraph.Length;
 
-    internal ParagraphLineBreaker(InlineItemsData Paragraph, ParagraphShaper Shaper, ShapingWorkspace Shaping,
-        LineBreakingWorkspace Workspace, float AvailableWidth, bool EmoteMargin)
+    internal ParagraphLineBreaker(InlineItemsData Paragraph, ParagraphShaper Shaper, ShapingWorkspace Shaping, LineBreakingWorkspace Ws, float AvailableWidth, bool EmoteMargin)
     {
         this.Paragraph = Paragraph;
         this.Shaper = Shaper;
         this.Shaping = Shaping;
-        this.Workspace = Workspace;
+        this.Ws = Ws;
         this.AvailableWidth = AvailableWidth;
         this.EmoteMargin = EmoteMargin;
     }
@@ -45,14 +44,14 @@ internal readonly ref struct ParagraphLineBreaker
     /// </summary>
     internal ParagraphLine NextLine(int Start, int Limit, SizeF Initial, bool Leading)
     {
-        Workspace.SetStartOffset(Start);
+        Ws.SetStartOffset(Start);
         var anywhere = false;
         Span<char> context = stackalloc char[CONTEXT_LENGTH];
         while (true) {
             var size = Initial;
             var at = Leading ? ConsumeLineSpace(Start, Limit) : Start;
             var empty = Leading;
-            Workspace.ItemResults.Clear();
+            Ws.ItemResults.Clear();
             var retry = false;
 
             while (at < Limit) {
@@ -62,7 +61,7 @@ internal readonly ref struct ParagraphLineBreaker
                     var imageSize = InlineSize(image);
                     if (size.Width + imageSize.Width > AvailableWidth && !empty) {
                         var after = new SizeF(size.Width + imageSize.Width, Math.Max(size.Height, imageSize.Height));
-                        Workspace.ItemResults.Add(new(index, at, item.End, size, after, false, false, empty));
+                        Ws.ItemResults.Add(new(index, at, item.End, size, after, false, false, empty));
                         if (HandleOverflow(Start, Limit, after.Width, anywhere, context) is { } rewound)
                             return rewound;
                         if (anywhere && at > Start)
@@ -75,7 +74,7 @@ internal readonly ref struct ParagraphLineBreaker
                     size.Height = Math.Max(size.Height, imageSize.Height);
                     empty = false;
                     at = item.End;
-                    Workspace.ItemResults.Add(new(index, item.Start, at, before, size,
+                    Ws.ItemResults.Add(new(index, item.Start, at, before, size,
                         !image.InlineImage || CanBreakAfterItem(at, item.BreakAll, anywhere), false, false));
                     continue;
                 }
@@ -96,11 +95,11 @@ internal readonly ref struct ParagraphLineBreaker
 
                 if (result.IsOverflow) {
                     var overflowWidth = Math.Max(result.Width, AvailableWidth - size.Width + 1);
-                    Workspace.ItemResults.Add(new(index, at, item.Start + result.BreakOffset, size,
+                    Ws.ItemResults.Add(new(index, at, item.Start + result.BreakOffset, size,
                         new(size.Width + overflowWidth, size.Height), false, false, empty));
                     if (HandleOverflow(Start, Limit, size.Width + overflowWidth, anywhere, context) is { } rewound)
                         return rewound;
-                    Workspace.ItemResults.RemoveAt(Workspace.ItemResults.Count - 1);
+                    Ws.ItemResults.RemoveAt(Ws.ItemResults.Count - 1);
                     if (anywhere && at > Start)
                         return ParagraphLineAt(at, Limit, size);
                     if (!anywhere) {
@@ -127,7 +126,7 @@ internal readonly ref struct ParagraphLineBreaker
 
                 var beforeText = size;
                 size.Width += completeWidth;
-                Workspace.ItemResults.Add(new(index, at, item.End, beforeText, size,
+                Ws.ItemResults.Add(new(index, at, item.End, beforeText, size,
                     BreakAfterText(index) || CanBreakAfterItem(item.End, item.BreakAll, anywhere), !result.IsOverflow, empty));
                 empty = false;
                 at = item.End;
@@ -148,7 +147,7 @@ internal readonly ref struct ParagraphLineBreaker
     /// </summary>
     private ParagraphLine? HandleOverflow(int Start, int Limit, float Position, bool Anywhere, Span<char> Context)
     {
-        var results = Workspace.ItemResults;
+        var results = Ws.ItemResults;
         var widthToRewind = Position - AvailableWidth;
         var breakBefore = -1;
         for (var index = results.Count - 1; index >= 0; index--) {
@@ -213,9 +212,9 @@ internal readonly ref struct ParagraphLineBreaker
 
     private readonly void EnsureParagraphBreaks(bool BreakAll)
     {
-        var breaks = BreakAll ? Workspace.BreakAllBreaks : Workspace.NormalBreaks;
+        var breaks = BreakAll ? Ws.BreakAllBreaks : Ws.NormalBreaks;
         if (breaks.Count == 0)
-            LineBreakIterator.Fill(Text, Paragraph.Marks.AsSpan(0, ParagraphLength), BreakAll, Workspace, breaks, Workspace.StartOffset);
+            LineBreakIterator.Fill(Text, Paragraph.Marks.AsSpan(0, ParagraphLength), BreakAll, Ws, breaks, Ws.StartOffset);
     }
 
     private readonly bool BreakAfterText(int Item) =>
@@ -233,9 +232,9 @@ internal readonly ref struct ParagraphLineBreaker
          * Blink's overflow-wrap retry changes the shared iterator to
          * kBreakCharacter; CanBreakAfter must use that same active policy.
          */
-        var graphemes = Workspace.ParagraphGraphemes;
+        var graphemes = Ws.ParagraphGraphemes;
         if (graphemes.Count == 0)
-            Workspace.Iterators.GetBreaks(Text, true, graphemes, Workspace.StartOffset);
+            Ws.Iterators.GetBreaks(Text, true, graphemes, Ws.StartOffset);
         foreach (var (_, end) in graphemes) {
             if (end >= Offset)
                 return end == Offset;
@@ -247,7 +246,7 @@ internal readonly ref struct ParagraphLineBreaker
     {
         EnsureParagraphBreaks(BreakAll);
         var result = Floor;
-        foreach (var (_, end) in BreakAll ? Workspace.BreakAllBreaks : Workspace.NormalBreaks) {
+        foreach (var (_, end) in BreakAll ? Ws.BreakAllBreaks : Ws.NormalBreaks) {
             if (end > End)
                 break;
             if (end > Floor)
@@ -261,13 +260,13 @@ internal readonly ref struct ParagraphLineBreaker
         if (WrappedStart)
             Shaper.EnsureItemShape(Item);
         var item = Paragraph.LineItems[Item];
-        var widths = new TextWidths(ItemClassification(Item), Shaping, Workspace.Widths, Start - item.Start,
+        var widths = new TextWidths(ItemClassification(Item), Shaping, Ws.Widths, Start - item.Start,
             Paragraph.Position(Item, Start), Paragraph.ContextBefore(item.Start, Context)) {
             ItemShape = Paragraph.Positions.AsSpan(item.PositionStart, item.End - item.Start + 1),
             ItemMarks = item.Marked ? Paragraph.Marks.AsSpan(item.Start, item.End - item.Start) : default,
             RightToLeftItemEnd = item.Rtl ? Paragraph.Position(Item, item.End) : null
         };
-        return new ShapingLineBreaker(widths, Workspace) {
+        return new ShapingLineBreaker(widths, Ws) {
             ParagraphText = Text,
             ParagraphMarks = Paragraph.Marks.AsSpan(0, ParagraphLength),
             ParagraphOffset = item.Start,
@@ -321,7 +320,7 @@ internal readonly ref struct ParagraphLineBreaker
     private readonly ClassifiedText ItemClassification(int Item)
     {
         var item = Paragraph.LineItems[Item];
-        var runs = Workspace.PieceRuns;
+        var runs = Ws.PieceRuns;
         runs.Clear();
         foreach (var run in Paragraph.Runs) {
             if (run.Range.End.Value <= item.Start)
@@ -338,9 +337,9 @@ internal readonly ref struct ParagraphLineBreaker
                 ShapingRange = null
             });
         }
-        Workspace.PieceBidi.Clear();
-        Workspace.PieceBidi.Add((item.End - item.Start, item.Rtl ? Direction.RightToLeft : Direction.LeftToRight));
-        return new(Text[item.Start..item.End], CollectionsMarshal.AsSpan(runs), CollectionsMarshal.AsSpan(Workspace.PieceBidi)) {
+        Ws.PieceBidi.Clear();
+        Ws.PieceBidi.Add((item.End - item.Start, item.Rtl ? Direction.RightToLeft : Direction.LeftToRight));
+        return new(Text[item.Start..item.End], CollectionsMarshal.AsSpan(runs), CollectionsMarshal.AsSpan(Ws.PieceBidi)) {
             Font = item.Font
         };
     }
