@@ -11,12 +11,6 @@ namespace MessageHeightTwitch.Emotes;
 /// The global emote catalogs, initialized once independently of channel lifetimes.
 /// Every channel in the process shares the resulting catalogs and image sizes.
 /// </summary>
-/// <remarks>
-/// Cache usage: by default one process-wide instance holds three global EmoteSets, FFZ emoji names and
-/// user-set mappings, in-flight catalog tasks by URL and successful image-size tasks by URL. Catalog tasks
-/// are removed on completion; image sizes and merged global emotes have no eviction or fixed limit. Storage
-/// grows with names, user sets and successful image URLs; image pixels are not cached.
-/// </remarks>
 internal sealed class GlobalEmotes
 {
     internal static readonly GlobalEmotes Shared = new();

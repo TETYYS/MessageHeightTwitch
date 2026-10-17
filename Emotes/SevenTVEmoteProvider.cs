@@ -11,43 +11,25 @@ using System.Threading.Tasks;
 
 namespace MessageHeightTwitch.Emotes;
 
-/// <summary>7TV v3 catalog sizes at 1x. Negative sizes identify suffix overlays.</summary>
-/// <remarks>
-/// Cache usage: one channel EmoteSet per provider and a shared global EmoteSet, both accumulating distinct
-/// names without eviction. Storage depends on catalogs; global request tasks are shared through EmoteLoading
-/// and removed on completion. Image dimensions come from catalog metadata.
-/// </remarks>
+/// <summary>
+/// 7TV v3 catalog sizes at 1x. Negative sizes identify suffix overlays.
+/// </summary>
 public sealed partial class SevenTVEmoteProvider : IEmoteProvider
 {
     private readonly EmoteLoading Loading;
     internal readonly EmoteSet Channel = new();
     internal EmoteSet Global => Loading.Globals.SevenTv;
 
-    /// <summary>7TV emote-set response data.</summary>
-    /// <remarks>
-    /// Cache usage: no independent cache; response data is temporary during loading and its size depends
-    /// on the response. Retained emote entries belong to EmoteSet.
-    /// </remarks>
     private sealed class SevenTVEmoteSet
     {
         public List<SevenTVEmote>? Emotes { get; set; } = [];
     }
 
-    /// <summary>7TV channel response data.</summary>
-    /// <remarks>
-    /// Cache usage: no independent cache; response data is temporary during loading and its size depends
-    /// on the response. Retained emote entries belong to EmoteSet.
-    /// </remarks>
     private sealed class SevenTVChannelResponse
     {
         public SevenTVEmoteSet? EmoteSet { get; set; }
     }
 
-    /// <summary>7TV emote name, flags and image metadata.</summary>
-    /// <remarks>
-    /// Cache usage: no independent cache; response data is temporary during loading and its size depends
-    /// on the response. Retained emote entries belong to EmoteSet.
-    /// </remarks>
     private sealed class SevenTVEmote
     {
         public string? Name { get; set; }
@@ -55,31 +37,16 @@ public sealed partial class SevenTVEmoteProvider : IEmoteProvider
         public SevenTVEmoteData? Data { get; set; }
     }
 
-    /// <summary>7TV emote image-host metadata.</summary>
-    /// <remarks>
-    /// Cache usage: no independent cache; response data is temporary during loading and its size depends
-    /// on the response. Retained emote entries belong to EmoteSet.
-    /// </remarks>
     private sealed class SevenTVEmoteData
     {
         public SevenTVHost? Host { get; set; }
     }
 
-    /// <summary>7TV image-host file metadata.</summary>
-    /// <remarks>
-    /// Cache usage: no independent cache; response data is temporary during loading and its size depends
-    /// on the response. Retained emote entries belong to EmoteSet.
-    /// </remarks>
     private sealed class SevenTVHost
     {
         public List<SevenTVFile>? Files { get; set; }
     }
 
-    /// <summary>7TV image file dimensions.</summary>
-    /// <remarks>
-    /// Cache usage: no independent cache; response data is temporary during loading and its size depends
-    /// on the response. Retained emote entries belong to EmoteSet.
-    /// </remarks>
     private sealed class SevenTVFile
     {
         public string? Name { get; set; }
@@ -87,11 +54,6 @@ public sealed partial class SevenTVEmoteProvider : IEmoteProvider
         public int Height { get; set; }
     }
 
-    /// <summary>Generated JSON metadata for the provider's catalog responses.</summary>
-    /// <remarks>
-    /// Cache usage: one generated default context caches serializer metadata for two root types and their
-    /// member types for the process lifetime. Size depends on the models; emote payloads are not retained here.
-    /// </remarks>
     [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
     [JsonSerializable(typeof(SevenTVEmoteSet))]
     [JsonSerializable(typeof(SevenTVChannelResponse))]
@@ -123,7 +85,9 @@ public sealed partial class SevenTVEmoteProvider : IEmoteProvider
         Apply(await Fetch(channelUrl, true, Token).ConfigureAwait(false), Channel);
     }
 
-    /// <summary>Null only for a channel without a 7TV set.</summary>
+    /// <summary>
+    /// Null only for a channel without a 7TV set.
+    /// </summary>
     private async Task<SevenTVEmoteSet?> Fetch(string Url, bool FromChannel, CancellationToken Token)
     {
         SevenTVEmoteSet? set;

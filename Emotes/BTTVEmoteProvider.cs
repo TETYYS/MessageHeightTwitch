@@ -12,12 +12,9 @@ using MessageHeightTwitch.Measurement.EmoteRewriting;
 
 namespace MessageHeightTwitch.Emotes
 {
-	/// <summary>Loads BTTV channel/global emotes and reports supported emoji.</summary>
-	/// <remarks>
-	/// Cache usage: one channel EmoteSet per provider, a shared global EmoteSet, and one process-wide emoji-name
-	/// set loaded from the embedded catalog. Emotes accumulate by distinct name without eviction; global
-	/// catalog requests and image sizes are shared through EmoteLoading and GlobalEmotes.
-	/// </remarks>
+	/// <summary>
+    /// Loads BTTV channel/global emotes and reports supported emoji.
+    /// </summary>
 	public partial class BTTVEmoteProvider : IEmoteProvider
 	{
 		internal readonly EmoteSet Channel = new();
@@ -26,12 +23,6 @@ namespace MessageHeightTwitch.Emotes
 		private readonly EmoteLoading Loading;
 		internal BTTVEmoteProvider(EmoteLoading? Loading = null) => this.Loading = Loading ?? new EmoteLoading();
 
-		// The catalog members the measurer reads.
-		/// <summary>BTTV emote catalog data.</summary>
-		/// <remarks>
-		/// Cache usage: no independent cache; response data is temporary during loading and its size depends
-		/// on the response. Retained emote entries belong to EmoteSet.
-		/// </remarks>
 		private class BTTVEmote
 		{
 			public string? Id { get; set; }
@@ -39,22 +30,12 @@ namespace MessageHeightTwitch.Emotes
 			public bool Modifier { get; set; }
 		}
 
-		/// <summary>BTTV channel and shared-emote response data.</summary>
-		/// <remarks>
-		/// Cache usage: no independent cache; response data is temporary during loading and its size depends
-		/// on the response. Retained emote entries belong to EmoteSet.
-		/// </remarks>
 		private class BTTVResponse
 		{
 			public IEnumerable<BTTVEmote> ChannelEmotes { get; set; } = [];
 			public IEnumerable<BTTVEmote> SharedEmotes { get; set; } = [];
 		}
 
-		/// <summary>Generated JSON metadata for the provider's catalog responses.</summary>
-		/// <remarks>
-		/// Cache usage: one generated default context caches serializer metadata for four root types and their
-		/// member types for the process lifetime. Size depends on the models; emote payloads are not retained here.
-		/// </remarks>
 		[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 		[JsonSerializable(typeof(IEnumerable<BTTVEmote>))]
 		[JsonSerializable(typeof(BTTVResponse))]
@@ -69,9 +50,6 @@ namespace MessageHeightTwitch.Emotes
 			return found;
 		}
 
-		/// <summary>
-        /// The modifier behavior of the emote <see cref="TryGetEmote"/> finds, if it is a modifier
-        /// </summary>
 		internal bool TryGetModifier(ReadOnlySpan<char> Name, out EmoteModifier Modifier)
 		{
 			Modifier = TryGet(Name, out var emote) ? emote.Modifier.GetValueOrDefault() : default;

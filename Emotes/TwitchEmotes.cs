@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace MessageHeightTwitch.Emotes;
 
-/// <summary>Measures cached Twitch images; Load fetches dimensions before measurement.</summary>
 internal sealed class TwitchEmotes
 {
     private readonly EmoteLoading Loading;

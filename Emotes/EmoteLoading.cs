@@ -17,11 +17,6 @@ namespace MessageHeightTwitch.Emotes;
 /// <summary>
 /// Fetches one channel's emote resources
 /// </summary>
-/// <remarks>
-/// Cache usage: no per-channel result cache. Shares GlobalEmotes' URL-keyed catalog tasks and image sizes
-/// and, by default, one process-wide HttpClient. Successful image sizes have no eviction; catalog tasks and
-/// failed requests are removed. Images are read for dimensions without retaining pixels.
-/// </remarks>
 internal sealed class EmoteLoading
 {
     private static readonly HttpClient SharedClient = new() { Timeout = Timeout.InfiniteTimeSpan };
@@ -56,7 +51,6 @@ internal sealed class EmoteLoading
         return (T)await Join(Globals.Catalogs, Url, async token => (object)await Fetch(token).ConfigureAwait(false), false, Token).ConfigureAwait(false);
     }
 
-    /// <summary>The size of an image already downloaded, without waiting.</summary>
     internal bool TryGetImageSize(string Url, out SizeF Size)
     {
         Size = default;
@@ -66,7 +60,6 @@ internal sealed class EmoteLoading
         return true;
     }
 
-    /// <summary>The size of the image at <paramref name="Url"/>, downloaded once for the process.</summary>
     internal Task<SizeF> ImageSize(string Url, CancellationToken Token)
     {
         if (Token.IsCancellationRequested)
@@ -79,15 +72,12 @@ internal sealed class EmoteLoading
     private Task<SizeF> LoadImageSize(string Url, CancellationToken Token)
     {
         return Join(Globals.ImageSizes, Url, async token => {
-            // Only the header is read; pixels are never decoded.
             using var stream = await Client.GetStreamAsync(Url, token).ConfigureAwait(false);
             using var codec = SKCodec.Create(stream) ?? throw new InvalidDataException("Unsupported emote image format");
             return new SizeF(codec.Info.Width, codec.Info.Height);
         }, true, Token);
     }
 
-    // The caller starting a shared request owns its cancellation. Other callers cancel only their wait;
-    // if the owner cancels, callers still waiting start a fresh request with their own token.
     private async Task<T> Join<T>(ConcurrentDictionary<string, Task<T>> Loads, string Url, Func<CancellationToken, Task<T>> Fetch, bool Keep, CancellationToken Token)
     {
         while (true) {

@@ -14,12 +14,9 @@ using MessageHeightTwitch.Measurement.EmoteRewriting;
 
 namespace MessageHeightTwitch.Emotes
 {
-	/// <summary>Loads FFZ room/global emotes, sender sets and emoji support.</summary>
-	/// <remarks>
-	/// Cache usage: one room EmoteSet per provider; global emotes, emoji names and sender-set mappings are
-	/// shared through GlobalEmotes. Room/global emotes merge by name without eviction; emoji and sender
-	/// mappings are replaced on load. Storage depends on catalogs; request caches belong to EmoteLoading.
-	/// </remarks>
+	/// <summary>
+    /// Loads FFZ room/global emotes, sender sets and emoji support.
+    /// </summary>
 	public partial class FFZEmoteProvider : IEmoteProvider
 	{
 		internal readonly EmoteSet Room = new();
@@ -28,11 +25,6 @@ namespace MessageHeightTwitch.Emotes
 		private readonly EmoteLoading Loading;
 		internal FFZEmoteProvider(EmoteLoading? Loading = null) => this.Loading = Loading ?? new EmoteLoading();
 
-		/// <summary>FFZ emote dimensions and modifier metadata.</summary>
-		/// <remarks>
-		/// Cache usage: no independent cache; response data is temporary during loading and its size depends
-		/// on the response. Retained emote entries belong to EmoteSet.
-		/// </remarks>
 		class FFZEmoticon
 		{
 			public int Height { get; set; }
@@ -44,21 +36,11 @@ namespace MessageHeightTwitch.Emotes
 			public int Width { get; set; }
 		}
 
-		/// <summary>The emotes in an FFZ response set.</summary>
-		/// <remarks>
-		/// Cache usage: no independent cache; response data is temporary during loading and its size depends
-		/// on the response. Retained emote entries belong to EmoteSet.
-		/// </remarks>
 		class FFZSet
 		{
 			public List<FFZEmoticon> Emoticons { get; set; } = new();
 		}
 
-		/// <summary>FFZ catalog sets and user grants.</summary>
-		/// <remarks>
-		/// Cache usage: no independent cache; response data is temporary during loading and its size depends
-		/// on the response. Retained emote entries belong to EmoteSet.
-		/// </remarks>
 		class FFZResponse
 		{
 			public Dictionary<string, FFZSet> Sets { get; set; } = new();
@@ -67,21 +49,11 @@ namespace MessageHeightTwitch.Emotes
 			public Dictionary<string, string[]>? Users { get; set; }
 		}
 
-		/// <summary>FFZ supported-emoji response data.</summary>
-		/// <remarks>
-		/// Cache usage: no independent cache; response data is temporary during loading and its size depends
-		/// on the response. Retained emote entries belong to EmoteSet.
-		/// </remarks>
 		class FFZEmojiResponse
 		{
 			public object[][] E { get; set; } = [];
 		}
 
-		/// <summary>Generated JSON metadata for the provider's catalog responses.</summary>
-		/// <remarks>
-		/// Cache usage: one generated default context caches serializer metadata for two root types and their
-		/// member types for the process lifetime. Size depends on the models; emote payloads are not retained here.
-		/// </remarks>
 		[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
 		[JsonSerializable(typeof(FFZResponse))]
 		[JsonSerializable(typeof(FFZEmojiResponse))]
@@ -111,7 +83,9 @@ namespace MessageHeightTwitch.Emotes
 			return emote.Modifier != null;
 		}
 
-		/// <summary>The FFZ sets granted to the sender with this login, such as Subwoofer Emote Effects; null without any.</summary>
+		/// <summary>
+        /// The FFZ sets granted to the sender with this login, such as Subwoofer Emote Effects; null without any.
+        /// </summary>
 		internal EmoteSet[]? UserSetsFor(ReadOnlySpan<char> Login) => Globals.FfzUserSetsFor(Login);
 
 		private bool TryGet(ReadOnlySpan<char> Name, out CatalogEmote Emote) => Room.TryGet(Name, out Emote) || Global.TryGet(Name, out Emote);

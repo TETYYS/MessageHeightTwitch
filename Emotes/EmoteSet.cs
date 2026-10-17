@@ -7,20 +7,14 @@ using System.Drawing;
 
 namespace MessageHeightTwitch.Emotes;
 
-/// <summary>An emote's size and, when it is a modifier, how it changes the emote it attaches to.</summary>
-/*
- * An emote's drawn size, its modifier metadata, and the size of its FFZ token when that differs from the drawn size:
- * FFZ draws an unmodified emote at its image's size, but a modified one at its token's (a Twitch emote's
- * WEIRD_EMOTE_SIZES entry, or 28x28).
- */
+/// <summary>
+/// An emote's size and, when it is a modifier, how it changes the emote it attaches to.
+/// </summary>
 internal readonly record struct CatalogEmote(SizeF Size, EmoteModifier? Modifier = null, SizeF? TokenSize = null);
 
-/// <summary>The emotes of one catalog by name. Measurements read it without locking while loads write to it.</summary>
-/// <remarks>
-/// Cache usage: one concurrent dictionary entry per distinct name, retaining its string and CatalogEmote
-/// value plus dictionary overhead. No size limit or eviction; Set replaces a value and TryAdd preserves it.
-/// Global sets live for the process; channel and user sets live with their owners.
-/// </remarks>
+/// <summary>
+/// The emotes of one catalog by name. Measurements read it without locking while loads write to it.
+/// </summary>
 internal sealed class EmoteSet
 {
     private readonly ConcurrentDictionary<string, CatalogEmote> Emotes = new(StringComparer.Ordinal);
