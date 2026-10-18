@@ -1,107 +1,62 @@
 package main
 
-// #cgo LDFLAGS: -L../c-interop -lcoreruncommon -ldl -lstdc++
+// #cgo linux LDFLAGS: -L../bin/Release/net10.0/linux-x64/publish -l:MessageHeightTwitch.so -Wl,-rpath,$ORIGIN
+// #cgo windows LDFLAGS: -L../bin/Release/net10.0/win-x64/publish -lMessageHeightTwitch
 // #include "../c-interop/exports.h"
 // #include <stdlib.h>
 import "C"
-import "fmt"
-import "unsafe"
-import "os"
+
+import (
+    "fmt"
+    "os"
+    "time"
+    "unsafe"
+)
 
 func main() {
-	
-	clr1 := C.CString("/home/user/prog/MessageHeightTwitch/go-interop/main")
-	clr2 := C.CString("/home/user/.dotnet/shared/Microsoft.NETCore.App/3.1.0/")
-	clr3 := C.CString("/home/user/prog/MessageHeightTwitch/bin/Debug/netstandard2.1/MessageHeightTwitch.dll")
-	
-	var res C.int
-	
-	res = C.LoadCLRRuntime(
-		clr1,
-		clr2,
-		clr3)
-	
-	C.free(unsafe.Pointer(clr1))
-	C.free(unsafe.Pointer(clr2))
-	C.free(unsafe.Pointer(clr3))
-	
-	if res != 0 {
-		fmt.Println("failed to load CLR runtime")
-		os.Exit(int(res))
-	}
-	
-	charMap := C.CString("../charmap.bin.gz")
-	channel := C.CString("channel")
-	channelId := C.CString("123")
-	channel2 := C.CString("channel2")
-	channel2Id := C.CString("321")
-	
-	res = C.InitCharMap(charMap)
-	C.free(unsafe.Pointer(charMap))
-	
-	if res != 1 {
-		fmt.Println("Failed to fill charmap")
-		os.Exit(1)
-	}
-	
-	res = C.InitChannel(channel, channelId, 30000)
-	
-	if res != 1 {
-		fmt.Println("Failed to load channel")
-		os.Exit(1)
-	}
-	
-	res = C.InitChannel(channel2, channel2Id, 30000)
-	
-	if res != 1 {
-		fmt.Println("Failed to load channel2")
-		os.Exit(1)
-	}
-	
-	input := C.CString("NaM")
-	username := C.CString("tetyys")
-	test := C.CString("test")
-	testhttp := C.CString("https://test.com/")
-	pajaDank := C.CString("pajaDank")
-	pajaDankUrl := C.CString("https://static-cdn.jtvnw.net/emoticons/v1/129570/1.0")
-	
-	var te [2](C.TwitchEmote)
-	te[0] = C.TwitchEmote{pajaDank, pajaDankUrl}
-	te[1] = C.TwitchEmote{test, testhttp}
-	
-	pArray := unsafe.Pointer(&te[0])
-	
-	var height C.float
-	var height2 C.float
-	
-	height = C.CalculateMessageHeightDirect(
-		channel,
-		input,
-		username,
-		username,
-		C.int(1),
-		((*C.TwitchEmote)(pArray)),
-		C.int(2))
-		
-	height2 = C.CalculateMessageHeightDirect(
-		channel2,
-		input,
-		username,
-		username,
-		C.int(1),
-		((*C.TwitchEmote)(pArray)),
-		C.int(2))
-	
-	C.free(unsafe.Pointer(channel))
-	C.free(unsafe.Pointer(channel2))
-	
-	C.free(unsafe.Pointer(input))
-	C.free(unsafe.Pointer(username))
-	C.free(unsafe.Pointer(test))
-	C.free(unsafe.Pointer(testhttp))
-	C.free(unsafe.Pointer(pajaDank))
-	C.free(unsafe.Pointer(pajaDankUrl))
-	
-	fmt.Println(height)
-	fmt.Println(height2)
+    if len(os.Args) != 3 && len(os.Args) != 4 {
+        fmt.Fprintf(os.Stderr, "Usage: %s CHANNEL CHANNEL_ID [FONT_DIR]\n", os.Args[0])
+        os.Exit(2)
+    }
+
+    channel := C.CString(os.Args[1])
+    defer C.free(unsafe.Pointer(channel))
+    channelID := C.CString(os.Args[2])
+    defer C.free(unsafe.Pointer(channelID))
+
+    var fontDir *C.char
+    if len(os.Args) == 4 {
+        fontDir = C.CString(os.Args[3])
+        defer C.free(unsafe.Pointer(fontDir))
+    }
+
+    if C.InitMessageHeightTwitch(fontDir, 30000, 0, nil, nil) != 1 {
+        fmt.Fprintln(os.Stderr, "Could not initialize shared resources")
+        os.Exit(1)
+    }
+
+    if C.InitChannel(channel, channelID, 30000, 0, nil, nil) != 1 {
+        fmt.Fprintln(os.Stderr, "Could not initialize channel")
+        os.Exit(1)
+    }
+
+    input := C.CString("Hello from Go")
+    defer C.free(unsafe.Pointer(input))
+    user := C.CString("example_user")
+    defer C.free(unsafe.Pointer(user))
+    measure := func() C.float {
+        return C.CalculateMessageHeight(channel, input, user, user, 0, nil, 0)
+    }
+
+    // Channel registration is queued; measurement returns 0 until it is published.
+    height := measure()
+    for attempt := 0; height == 0 && attempt < 300; attempt++ {
+        time.Sleep(100 * time.Millisecond)
+        height = measure()
+    }
+    if height == 0 {
+        fmt.Fprintln(os.Stderr, "Channel did not finish loading")
+        os.Exit(1)
+    }
+    fmt.Println("Message height:", float32(height))
 }

@@ -1,0 +1,32 @@
+# ICU data items kept in the bundled icudt78.dll. Everything else in the
+# release's data is locale, collation, conversion and time zone data the
+# library never opens. Character properties, NFC and bidi are built into
+# icuuc78.dll and need no data.
+#
+# u_init opens the converter alias table.
+cnvalias.icu
+# Emoji properties and the RGI_Emoji sets.
+uemoji.icu
+# Not used by the library. They keep every u_getIntPropertyValue and
+# u_hasBinaryProperty result equal to the full data's: NFKC quick checks and
+# inert properties, Changes_When_NFKC_Casefolded, and the Indic positional,
+# Indic syllabic and vertical orientation properties.
+nfkc.nrm
+nfkc_cf.nrm
+ulayout.icu
+# The en-US line and character break iterators. Keeping the locale chain to
+# root means ICU never substitutes the machine's default locale.
+brkitr/res_index.res
+brkitr/root.res
+brkitr/en.res
+brkitr/en_US.res
+brkitr/line.brk
+# Chromium's default line rules, which the library opens with lb=normal.
+brkitr/line_normal.brk
+brkitr/char.brk
+# Line breaking within Thai, Lao, Khmer and Myanmar text.
+# Build-IcuData.ps1 replaces laodict.dict with Chromium's pinned dictionary.
+brkitr/thaidict.dict
+brkitr/laodict.dict
+brkitr/khmerdict.dict
+brkitr/burmesedict.dict

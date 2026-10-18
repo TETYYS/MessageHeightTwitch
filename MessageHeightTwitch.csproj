@@ -1,22 +1,87 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <TargetFramework>net10.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <PublishAot>true</PublishAot>
+    <NativeLib>Shared</NativeLib>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StackTraceSupport>false</StackTraceSupport>
+    <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
+    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(TestHooks)' == 'true'">
+    <DefineConstants>$(DefineConstants);TEST</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(PlatformTarget)' == 'x86' or '$(PlatformTarget)' == 'x64'">
+    <OutputPath>bin\$(Configuration)\$(PlatformTarget)\</OutputPath>
+    <IntermediateOutputPath>obj\$(Configuration)\$(PlatformTarget)\</IntermediateOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="ImageSharp\**" />
     <Compile Remove="Tests\**" />
-    <EmbeddedResource Remove="ImageSharp\**" />
+    <Compile Remove="Tools\**" />
     <EmbeddedResource Remove="Tests\**" />
-    <None Remove="ImageSharp\**" />
     <None Remove="Tests\**" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
-    <PackageReference Include="System.Memory" Version="4.5.5" />
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
-    <PackageReference Include="Unicode.net" Version="2.0.0" />
+    <PackageReference Include="icu.net" Version="4.0.0" />
+    <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="10.0.0" />
+    <PackageReference Include="SkiaSharp" Version="4.153.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.153.1" />
+    <PackageReference Include="HarfBuzzSharp" Version="14.4.0-preview.2.26479.13" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.4.0-preview.2.26479.13" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Fonts\**\*.ttf;Fonts\**\*.otf" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Fonts\*.bin" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="BTTVSupportedEmojis.json" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+    <Content Include="Native\icu78\win-x64\*.dll" Condition="'$(RuntimeIdentifier)' == 'win-x64' or ('$(RuntimeIdentifier)' == '' and ('$(PlatformTarget)' == 'x64' or ('$(PlatformTarget)' != 'x86' and $([System.Environment]::Is64BitOperatingSystem))))" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <Content Include="Native\icu78\win-x86\*.dll" Condition="'$(RuntimeIdentifier)' == 'win-x86' or ('$(RuntimeIdentifier)' == '' and ('$(PlatformTarget)' == 'x86' or ('$(PlatformTarget)' != 'x64' and !$([System.Environment]::Is64BitOperatingSystem))))" Link="%(Filename)%(Extension)" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+  </ItemGroup>
+    
+  <PropertyGroup>
+    <UseBundledLinuxIcu Condition="'$(RuntimeIdentifier)' == 'linux-x64' or ('$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Linux')))">true</UseBundledLinuxIcu>
+  </PropertyGroup>
+    
+  <ItemGroup Condition="'$(UseBundledLinuxIcu)' == 'true'">
+    <Content Include="Native/icu78/linux-x64/libicudata.so.78;Native/icu78/linux-x64/libicuuc.so.78" Link="icu78/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+    
+  <Target Name="BuildLinuxIcu" BeforeTargets="BeforeBuild" Condition="'$(UseBundledLinuxIcu)' == 'true' and '$(DesignTimeBuild)' != 'true'"
+          Inputs="$(MSBuildThisFileDirectory)Tools/IcuData/Build-IcuData.sh;$(MSBuildThisFileDirectory)Tools/IcuData/items.txt"
+          Outputs="$(MSBuildThisFileDirectory)Native/icu78/linux-x64/libicudata.so.78;$(MSBuildThisFileDirectory)Native/icu78/linux-x64/libicuuc.so.78">
+    <Error Condition="!$([MSBuild]::IsOSPlatform('Linux'))" Text="Build the Linux ICU runtime on Linux/WSL with bash Tools/IcuData/Build-IcuData.sh before publishing linux-x64 from another OS." />
+    <Exec Command="bash &quot;$(MSBuildThisFileDirectory)Tools/IcuData/Build-IcuData.sh&quot;" />
+  </Target>
+    
+  <PropertyGroup>
+    <OpenTypeManifest>$(MSBuildThisFileDirectory)Native/opentype/Cargo.toml</OpenTypeManifest>
+    <CargoTargetDir>$(MSBuildThisFileDirectory)obj/cargo</CargoTargetDir>
+    <CargoTarget Condition="'$(RuntimeIdentifier)' == 'win-x64' or ('$(RuntimeIdentifier)' == '' and '$(OS)' == 'Windows_NT' and '$(PlatformTarget)' != 'x86')">x86_64-pc-windows-msvc</CargoTarget>
+    <CargoTarget Condition="'$(RuntimeIdentifier)' == 'win-x86' or ('$(RuntimeIdentifier)' == '' and '$(OS)' == 'Windows_NT' and '$(PlatformTarget)' == 'x86')">i686-pc-windows-msvc</CargoTarget>
+    <CargoTarget Condition="'$(RuntimeIdentifier)' == 'linux-x64' or ('$(RuntimeIdentifier)' == '' and '$(OS)' != 'Windows_NT')">x86_64-unknown-linux-gnu</CargoTarget>
+    <OpenTypeLibrary Condition="$(CargoTarget.Contains('windows'))">mht_opentype.dll</OpenTypeLibrary>
+    <OpenTypeLibrary Condition="!$(CargoTarget.Contains('windows'))">libmht_opentype.so</OpenTypeLibrary>
+  </PropertyGroup>
+    
+  <ItemGroup>
+    <Content Include="$(CargoTargetDir)/$(CargoTarget)/release/$(OpenTypeLibrary)" Link="$(OpenTypeLibrary)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="BuildOpenTypeCrate" BeforeTargets="BeforeBuild" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Error Condition="'$(CargoTarget)' == ''" Text="Native/opentype has no Cargo target for runtime identifier '$(RuntimeIdentifier)'." />
+    <Exec Command="cargo build --release --locked --manifest-path &quot;$(OpenTypeManifest)&quot; --target $(CargoTarget) --target-dir &quot;$(CargoTargetDir)&quot;" />
+  </Target>
+  <Target Name="RemoveNativePackageSymbols" AfterTargets="ResolvePackageAssets">
+    <ItemGroup>
+      <NativeCopyLocalItems Remove="@(NativeCopyLocalItems)" Condition="'%(Extension)' == '.pdb'" />
+      <RuntimeTargetsCopyLocalItems Remove="@(RuntimeTargetsCopyLocalItems)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
 </Project>

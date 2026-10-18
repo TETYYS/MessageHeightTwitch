@@ -1,8 +1,10 @@
 # c-interop
 
-Library and example how to call MessageHeightTwitch (C#) from C++
+Example how to call MessageHeightTwitch from C++
 
-Compile library:
+```
+g++ c-interop/main.cpp -Lbin/Release/net10.0/linux-x64/publish -l:MessageHeightTwitch.so -o bin/Release/net10.0/linux-x64/publish/example
+cd bin/Release/net10.0/linux-x64/publish/
+LD_LIBRARY_PATH="$PWD${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" ./example CHANNEL CHANNEL_ID
 
-    g++ -c coreruncommon.cpp
-	ar rvs libcoreruncommon.a coreruncommon.o
+```
