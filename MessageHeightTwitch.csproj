@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -47,18 +47,25 @@
   </ItemGroup>
     
   <PropertyGroup>
-    <UseBundledLinuxIcu Condition="'$(RuntimeIdentifier)' == 'linux-x64' or ('$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Linux')))">true</UseBundledLinuxIcu>
+    <LinuxNativeRuntimeIdentifier Condition="$(RuntimeIdentifier.StartsWith('linux-'))">$(RuntimeIdentifier)</LinuxNativeRuntimeIdentifier>
+    <LinuxNativeRuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">$(NETCoreSdkRuntimeIdentifier)</LinuxNativeRuntimeIdentifier>
+    <UseBundledLinuxIcu Condition="'$(LinuxNativeRuntimeIdentifier)' != ''">true</UseBundledLinuxIcu>
+    <LinuxIcuDirectory>$(MSBuildThisFileDirectory)Native/icu78/$(LinuxNativeRuntimeIdentifier)</LinuxIcuDirectory>
   </PropertyGroup>
     
+  <ItemGroup Condition="'$(LinuxNativeRuntimeIdentifier)' != ''">
+    <DirectPInvoke Include="__Internal!dladdr" />
+  </ItemGroup>
   <ItemGroup Condition="'$(UseBundledLinuxIcu)' == 'true'">
-    <Content Include="Native/icu78/linux-x64/libicudata.so.78;Native/icu78/linux-x64/libicuuc.so.78" Link="icu78/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(LinuxIcuDirectory)/libicudata.so.78;$(LinuxIcuDirectory)/libicuuc.so.78" Link="icu78/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
     
   <Target Name="BuildLinuxIcu" BeforeTargets="BeforeBuild" Condition="'$(UseBundledLinuxIcu)' == 'true' and '$(DesignTimeBuild)' != 'true'"
           Inputs="$(MSBuildThisFileDirectory)Tools/IcuData/Build-IcuData.sh;$(MSBuildThisFileDirectory)Tools/IcuData/items.txt"
-          Outputs="$(MSBuildThisFileDirectory)Native/icu78/linux-x64/libicudata.so.78;$(MSBuildThisFileDirectory)Native/icu78/linux-x64/libicuuc.so.78">
-    <Error Condition="!$([MSBuild]::IsOSPlatform('Linux'))" Text="Build the Linux ICU runtime on Linux/WSL with bash Tools/IcuData/Build-IcuData.sh before publishing linux-x64 from another OS." />
-    <Exec Command="bash &quot;$(MSBuildThisFileDirectory)Tools/IcuData/Build-IcuData.sh&quot;" />
+          Outputs="$(LinuxIcuDirectory)/libicudata.so.78;$(LinuxIcuDirectory)/libicuuc.so.78">
+    <Error Condition="!$([MSBuild]::IsOSPlatform('Linux'))" Text="Build ICU on Linux with a toolchain matching $(LinuxNativeRuntimeIdentifier): sh Tools/IcuData/Build-IcuData.sh --output Native/icu78/$(LinuxNativeRuntimeIdentifier)" />
+    <Error Condition="'$(LinuxNativeRuntimeIdentifier)' != '$(NETCoreSdkRuntimeIdentifier)'" Text="ICU must be built on a host matching $(LinuxNativeRuntimeIdentifier)." />
+    <Exec Command="sh &quot;$(MSBuildThisFileDirectory)Tools/IcuData/Build-IcuData.sh&quot; --output &quot;$(LinuxIcuDirectory)&quot;" />
   </Target>
     
   <PropertyGroup>
@@ -66,7 +73,9 @@
     <CargoTargetDir>$(MSBuildThisFileDirectory)obj/cargo</CargoTargetDir>
     <CargoTarget Condition="'$(RuntimeIdentifier)' == 'win-x64' or ('$(RuntimeIdentifier)' == '' and '$(OS)' == 'Windows_NT' and '$(PlatformTarget)' != 'x86')">x86_64-pc-windows-msvc</CargoTarget>
     <CargoTarget Condition="'$(RuntimeIdentifier)' == 'win-x86' or ('$(RuntimeIdentifier)' == '' and '$(OS)' == 'Windows_NT' and '$(PlatformTarget)' == 'x86')">i686-pc-windows-msvc</CargoTarget>
-    <CargoTarget Condition="'$(RuntimeIdentifier)' == 'linux-x64' or ('$(RuntimeIdentifier)' == '' and '$(OS)' != 'Windows_NT')">x86_64-unknown-linux-gnu</CargoTarget>
+    <CargoTarget Condition="'$(LinuxNativeRuntimeIdentifier)' == 'linux-x64'">x86_64-unknown-linux-gnu</CargoTarget>
+    <CargoTarget Condition="'$(LinuxNativeRuntimeIdentifier)' == 'linux-musl-x64'">x86_64-unknown-linux-musl</CargoTarget>
+    <CargoLinuxOptions Condition="$(CargoTarget.Contains('-linux-'))">--config &quot;target.$(CargoTarget).rustflags=['-C', 'target-feature=-crt-static']&quot;</CargoLinuxOptions>
     <OpenTypeLibrary Condition="$(CargoTarget.Contains('windows'))">mht_opentype.dll</OpenTypeLibrary>
     <OpenTypeLibrary Condition="!$(CargoTarget.Contains('windows'))">libmht_opentype.so</OpenTypeLibrary>
   </PropertyGroup>
@@ -76,7 +85,7 @@
   </ItemGroup>
   <Target Name="BuildOpenTypeCrate" BeforeTargets="BeforeBuild" Condition="'$(DesignTimeBuild)' != 'true'">
     <Error Condition="'$(CargoTarget)' == ''" Text="Native/opentype has no Cargo target for runtime identifier '$(RuntimeIdentifier)'." />
-    <Exec Command="cargo build --release --locked --manifest-path &quot;$(OpenTypeManifest)&quot; --target $(CargoTarget) --target-dir &quot;$(CargoTargetDir)&quot;" />
+    <Exec Command="cargo build --release --locked --manifest-path &quot;$(OpenTypeManifest)&quot; --target $(CargoTarget) --target-dir &quot;$(CargoTargetDir)&quot; $(CargoLinuxOptions)" />
   </Target>
   <Target Name="RemoveNativePackageSymbols" AfterTargets="ResolvePackageAssets">
     <ItemGroup>
