@@ -68,6 +68,6 @@ internal static class IcuVersion
         internal nint SymbolAddress;
     }
 
-    [DllImport("libdl.so.2", EntryPoint = "dladdr")]
+    [DllImport("__Internal", EntryPoint = "dladdr")]
     private static extern int GetLibraryInfo(nint Address, out LibraryInfo Info);
 }

@@ -14,7 +14,7 @@ Library to measure message height on Twitch. Supports FFZ, BTTV and 7TV emotes. 
 
 ## Setup
 
-Following packages are required:
+On Debian/Ubuntu, the following packages are required:
 
  * libc6
  * libstdc++6
