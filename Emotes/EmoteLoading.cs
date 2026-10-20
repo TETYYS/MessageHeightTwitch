@@ -72,8 +72,9 @@ internal sealed class EmoteLoading
     private Task<SizeF> LoadImageSize(string Url, CancellationToken Token)
     {
         return Join(Globals.ImageSizes, Url, async token => {
-            using var stream = await Client.GetStreamAsync(Url, token).ConfigureAwait(false);
-            using var codec = SKCodec.Create(stream) ?? throw new InvalidDataException("Unsupported emote image format");
+            var bytes = await Client.GetByteArrayAsync(Url, token).ConfigureAwait(false);
+            using var stream = new MemoryStream(bytes, writable: false);
+            using var codec = SKCodec.Create(stream) ?? throw new InvalidDataException($"Unsupported emote image format: {Url}");
             return new SizeF(codec.Info.Width, codec.Info.Height);
         }, true, Token);
     }

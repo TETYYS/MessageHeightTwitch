@@ -44,6 +44,57 @@ public class EmoteLoadingTests
     private static readonly byte[] Png = Convert.FromBase64String(
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aE1sAAAAASUVORK5CYII=");
 
+    private sealed class FragmentedStream(byte[] Bytes) : MemoryStream(Bytes)
+    {
+        public override bool CanSeek => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override long Seek(long Offset, SeekOrigin Origin) => throw new NotSupportedException();
+        public override int Read(byte[] Buffer, int Offset, int Count) => base.Read(Buffer, Offset, Math.Min(Count, 7));
+        public override int Read(Span<byte> Buffer) => base.Read(Buffer[..Math.Min(Buffer.Length, 7)]);
+        public override ValueTask<int> ReadAsync(Memory<byte> Buffer, CancellationToken Token = default) =>
+            base.ReadAsync(Buffer[..Math.Min(Buffer.Length, 7)], Token);
+    }
+
+    [Fact]
+    public async Task ImageSizeCanReadFragmentedNetworkStream()
+    {
+        using var handler = new Handler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) {
+            Content = new StreamContent(new FragmentedStream(Png))
+        }));
+        using var client = new HttpClient(handler);
+        var loading = new EmoteLoading(client, new());
+        Assert.Equal(new SizeF(1, 1), await loading.ImageSize("https://example.test/fragmented.png", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task InvalidImageReportsItsUrlAndDoesNotPoisonTheSizeCache()
+    {
+        var attempts = 0;
+        using var handler = new Handler((_, _) => Task.FromResult(++attempts == 1
+            ? Json("not an image") : new(HttpStatusCode.OK) { Content = new ByteArrayContent(Png) }));
+        using var client = new HttpClient(handler);
+        var loading = new EmoteLoading(client, new());
+        const string url = "https://example.test/broken.png";
+        var error = await Assert.ThrowsAsync<InvalidDataException>(() => loading.ImageSize(url, CancellationToken.None));
+        Assert.Contains(url, error.Message);
+        Assert.False(loading.TryGetImageSize(url, out _));
+        Assert.Equal(new SizeF(1, 1), await loading.ImageSize(url, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task NativeRetriesInvalidImageData()
+    {
+        var attempts = 0;
+        var errors = new List<Exception>();
+        await MessageHeightTwitchStatic.Retry(_ => {
+            if (++attempts == 1) throw new InvalidDataException("bad image");
+            return Task.CompletedTask;
+        }, 1000, errors.Add, CancellationToken.None, (_, _) => Task.CompletedTask);
+        Assert.Equal(2, attempts);
+        Assert.IsType<InvalidDataException>(Assert.Single(errors));
+    }
+
     [Fact]
     public async Task ManagedProviderThrowsWithoutRetryingAndCanBeCalledAgain()
     {
@@ -277,22 +328,23 @@ public class EmoteLoadingTests
     }
 
     [Fact]
-    public async Task QueuedInitializationReturnsBeforeFactoryCompletes()
+    public async Task InitializationReturnsOnlyAfterLocalSetupCompletes()
     {
         var entered = NewTcs();
         var release = NewTcs();
         var error = new TaskCompletionSource<EmoteErrorCode>(TaskCreationOptions.RunContinuationsAsynchronously);
-        try {
-            var queued = Task.Run(() => MessageHeightTwitchStatic.QueueChannel(Guid.NewGuid().ToString(), "id", 1000,
+        var queued = Task.Run(() => MessageHeightTwitchStatic.QueueChannel(Guid.NewGuid().ToString(), "id", 1000,
                 false, (code, _) => error.TrySetResult(code), () => {
                     entered.TrySetResult();
                     release.Task.GetAwaiter().GetResult();
                     throw new InvalidOperationException("local setup failed");
                 }));
-            Assert.Equal(1, await queued.WaitAsync(TimeSpan.FromSeconds(5)));
+        try {
             await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(queued.IsCompleted);
             Assert.False(error.Task.IsCompleted);
         } finally { release.TrySetResult(); }
+        Assert.Equal(0, await queued.WaitAsync(TimeSpan.FromSeconds(5)));
         Assert.Equal(EmoteErrorCode.ChannelInitializationFailed, await error.Task.WaitAsync(TimeSpan.FromSeconds(5)));
     }
 

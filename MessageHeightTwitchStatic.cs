@@ -17,7 +17,6 @@ using MessageHeightTwitch;
 /// </summary>
 internal static class MessageHeightTwitchStatic
 {
-    // Codes 1-3 remain reserved for ABI compatibility; initialization failures use 5 or 6.
     internal enum EmoteErrorCode
     {
         FFZFetchFailed = 1,
@@ -25,7 +24,8 @@ internal static class MessageHeightTwitchStatic
         SevenTVFetchFailed = 3,
         TwitchFetchFailed = 4,
         ChannelInitializationFailed = 5,
-        GlobalInitializationFailed = 6
+        GlobalInitializationFailed = 6,
+        MeasurementFailed = 7
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -167,20 +167,24 @@ internal static class MessageHeightTwitchStatic
         }
     }
 
-    internal static int QueueChannel(string Name, string Id, int TimeoutMs, bool Enable7TvEmotes, Action<EmoteErrorCode, string>? OnError, Func<MessageHeightTwitch.MessageHeightTwitch>? Create = null)
+    internal static int QueueChannel(string Name, string Id, int TimeoutMs, bool Enable7TvEmotes, Action<EmoteErrorCode, string>? OnError, Func<MessageHeightTwitch.MessageHeightTwitch>? Create = null, HttpClient? Client = null, GlobalEmotes? Globals = null)
     {
         if (TimeoutMs < -1)
             return 0;
 
         var registration = new ChannelRegistration(TimeoutMs, OnError);
-        Register(Name, registration);
-
-        _ = Task.Run(() => Retry(token => {
-            var instance = Create != null ? Create() : new MessageHeightTwitch.MessageHeightTwitch(Name, Id, Enable7TvEmotes, token);
+        try {
+            var instance = Create != null ? Create() : new MessageHeightTwitch.MessageHeightTwitch(Enable7TvEmotes, Client, Globals);
             registration.Publish(instance);
-            return Task.CompletedTask;
-        }, TimeoutMs, ex => registration.Report(EmoteErrorCode.ChannelInitializationFailed, ex.Message), registration.Lifetime.Token));
-        return 1;
+            Register(Name, registration);
+            if (Create == null)
+                _ = Task.Run(() => Retry(token => instance.LoadEmotes(Name, Id, Enable7TvEmotes, token), TimeoutMs, ex => registration.Report(EmoteErrorCode.ChannelInitializationFailed, ex.Message), registration.Lifetime.Token));
+            return 1;
+        } catch (Exception ex) {
+            registration.Report(EmoteErrorCode.ChannelInitializationFailed, ex.ToString());
+            registration.Stop();
+            return 0;
+        }
     }
 
     // All native-only policies live at this boundary. Managed operations receive only a token and throw.
@@ -198,7 +202,7 @@ internal static class MessageHeightTwitchStatic
                 return;
             } catch (Exception ex) {
                 try { OnError(ex); } catch { }
-                if (ex is not (HttpRequestException or IOException or JsonException or OperationCanceledException))
+                if (ex is not (HttpRequestException or IOException or InvalidDataException or JsonException or OperationCanceledException))
                     return;
             }
             try {
@@ -213,13 +217,14 @@ internal static class MessageHeightTwitchStatic
     [UnmanagedCallersOnly(EntryPoint = "CalculateMessageHeight", CallConvs = [typeof(CallConvCdecl)])]
     public static unsafe float CalculateMessageHeight(byte* Channel, byte* Input, byte* Username, byte* DisplayName, int NumberOfBadges, TwitchEmote* TwitchEmotes, int TwitchEmotesLen)
     {
+        ChannelRegistration? registration = null;
         try {
             var name = Marshal.PtrToStringUTF8((nint)Channel);
             var message = Marshal.PtrToStringUTF8((nint)Input);
             var user = Marshal.PtrToStringUTF8((nint)Username);
             var display = Marshal.PtrToStringUTF8((nint)DisplayName);
 
-            if (name == null || message == null || user == null || display == null || TwitchEmotesLen < 0 || (TwitchEmotesLen > 0 && TwitchEmotes == null) || !Instances.TryGetValue(name, out var registration) || Volatile.Read(ref registration.Instance) is not { } instance)
+            if (name == null || message == null || user == null || display == null || TwitchEmotesLen < 0 || (TwitchEmotesLen > 0 && TwitchEmotes == null) || !Instances.TryGetValue(name, out registration) || Volatile.Read(ref registration.Instance) is not { } instance)
                 return 0;
 
             var emotes = new Dictionary<string, string>(TwitchEmotesLen);
@@ -234,7 +239,8 @@ internal static class MessageHeightTwitchStatic
 
             registration.LoadImages(instance, emotes.Values);
             return instance.CalculateMessageHeight(message, user, display, NumberOfBadges, emotes);
-        } catch {
+        } catch (Exception ex) {
+            registration?.Report(EmoteErrorCode.MeasurementFailed, ex.ToString());
             return 0;
         }
     }

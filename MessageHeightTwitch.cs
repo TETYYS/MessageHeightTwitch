@@ -65,6 +65,8 @@ namespace MessageHeightTwitch
 
         private readonly CancellationTokenSource EmoteLifetime;
         internal readonly TwitchEmotes? TwitchImages;
+        private readonly EmoteLoading? Loading;
+        private readonly SevenTVEmoteProvider? SevenTv;
 
         public MessageHeightTwitch(
             EmoteLookup SevenTvGetEmote,
@@ -84,18 +86,29 @@ namespace MessageHeightTwitch
         /// <param name="Globals">The global emote catalogs and image sizes; those every channel in the process shares when null.</param>
         internal MessageHeightTwitch(string Channel, string ChannelId, CancellationToken Token, bool Enable7TvEmotes,
             HttpClient? Client = null, GlobalEmotes? Globals = null)
+            : this(Enable7TvEmotes, Client, Globals)
+        {
+            try {
+                LoadEmotes(Channel, ChannelId, Enable7TvEmotes, Token).WaitAsync(Token).GetAwaiter().GetResult();
+            } catch {
+                EmoteLifetime.Dispose();
+                throw;
+            }
+        }
+
+        // Native callers publish this measurer before starting network requests.
+        internal MessageHeightTwitch(bool Enable7TvEmotes, HttpClient? Client = null, GlobalEmotes? Globals = null)
         {
             CheckInit();
-            Token.ThrowIfCancellationRequested();
             ChannelFonts = FontGlobalContext.Shared.FallbackList;
             EmoteLifetime = new();
-            var loading = new EmoteLoading(Client, Globals);
-            var ffz = new FFZEmoteProvider(loading);
-            var bttv = new BTTVEmoteProvider(loading);
-            var sevenTv = Enable7TvEmotes ? new SevenTVEmoteProvider(loading) : null;
-            var sevenTvGlobal = Enable7TvEmotes ? sevenTv!.Global.TryGetSize : new EmoteLookup((ReadOnlySpan<char> name, out SizeF size) => { size = default; return false; });
-            var sevenTvChannel = Enable7TvEmotes ? sevenTv!.Channel.TryGetSize : new EmoteLookup((ReadOnlySpan<char> name, out SizeF size) => { size = default; return false; });
-            TwitchImages = new TwitchEmotes(loading);
+            Loading = new EmoteLoading(Client, Globals);
+            var ffz = new FFZEmoteProvider(Loading);
+            var bttv = new BTTVEmoteProvider(Loading);
+            SevenTv = Enable7TvEmotes ? new SevenTVEmoteProvider(Loading) : null;
+            var sevenTvGlobal = Enable7TvEmotes ? SevenTv!.Global.TryGetSize : new EmoteLookup((ReadOnlySpan<char> name, out SizeF size) => { size = default; return false; });
+            var sevenTvChannel = Enable7TvEmotes ? SevenTv!.Channel.TryGetSize : new EmoteLookup((ReadOnlySpan<char> name, out SizeF size) => { size = default; return false; });
+            TwitchImages = new TwitchEmotes(Loading);
             Emotes = new EmoteResolver(
                 sevenTvChannel,
                 bttv.Channel.TryGetSize,
@@ -110,16 +123,16 @@ namespace MessageHeightTwitch
                 BTTVProvider = bttv,
                 FFZProvider = ffz
             };
-            try {
-                Task.WhenAll(
-                    loading.Globals.Initialize(Enable7TvEmotes, Token, Client),
-                    ffz.InitializeChannel(Channel, Token), bttv.InitializeChannel(ChannelId, Token),
-                    sevenTv?.InitializeChannel(ChannelId, Token) ?? Task.CompletedTask)
-                    .WaitAsync(Token).GetAwaiter().GetResult();
-            } catch {
-                EmoteLifetime.Dispose();
-                throw;
-            }
+        }
+
+        internal Task LoadEmotes(string Channel, string ChannelId, bool Enable7TvEmotes, CancellationToken Token)
+        {
+            Token.ThrowIfCancellationRequested();
+            return Task.WhenAll(
+                Loading!.Globals.Initialize(Enable7TvEmotes, Token, Loading.Client),
+                Emotes.FFZProvider!.InitializeChannel(Channel, Token),
+                Emotes.BTTVProvider!.InitializeChannel(ChannelId, Token),
+                SevenTv?.InitializeChannel(ChannelId, Token) ?? Task.CompletedTask);
         }
 
         /// <summary>Loads Twitch image sizes before measurement. Unloaded images use a 28x28 placeholder.
