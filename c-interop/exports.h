@@ -22,19 +22,21 @@ typedef enum EmoteErrorCode {
     MHT_SEVENTV_FETCH_FAILED = 3,
     MHT_TWITCH_FETCH_FAILED = 4,
     MHT_CHANNEL_INITIALIZATION_FAILED = 5,
-    MHT_GLOBAL_INITIALIZATION_FAILED = 6
+    MHT_GLOBAL_INITIALIZATION_FAILED = 6,
+    MHT_MEASUREMENT_FAILED = 7
 } EmoteErrorCode;
 
 /*++
 
 Routine Description:
 
-    Reports emote loading errors using the Cdecl calling convention. Fetch
-    errors are reported on background threads, potentially concurrently.
-    Strings are null-terminated UTF-8 and valid only during the callback.
-    Keep the callback and userData alive for the channel's lifetime, including
-    callbacks already in flight when the channel is reinitialized. Keep the
-    global callback and its userData alive for the process lifetime.
+    Reports errors using the Cdecl calling convention. Fetch errors are
+    reported on background threads, potentially concurrently. Measurement
+    errors are reported on the measuring thread. Strings are null-terminated
+    UTF-8 and valid only during the callback. Keep the callback and
+    userData alive for the channel's lifetime, including callbacks already
+    in flight when the channel is reinitialized. Keep the global callback
+    and its userData alive for the process lifetime.
 
 Arguments:
 
@@ -85,12 +87,11 @@ int MHT_CDECL InitMessageHeightTwitch(const char* fontDir, int timeoutMs, unsign
 
 Routine Description:
 
-    Queues channel initialization. Call InitMessageHeightTwitch first.
-    All strings are null-terminated UTF-8. The channel is published after its
-    catalogs finish loading. Failed network initialization attempts retry
-    indefinitely with delays of 1, 2, 4, 8, 16, then 30 seconds. Non-network
-    setup errors are not retried. Reinitializing the same channel cancels its
-    previous background loads.
+    Initializes a channel measurer and queues its emote loading. Call
+    InitMessageHeightTwitch first. All strings are null-terminated UTF-8.
+    A successful return makes measurement immediately available, before any
+    catalogs or images finish loading. Emote fetch and image decoding failures
+    retry indefinitely with delays of 1, 2, 4, 8, 16, then 30 seconds.
 
 Arguments:
 
@@ -111,8 +112,8 @@ Arguments:
 
 Return Value:
 
-    1 if initialization was queued; 0 for invalid arguments or if the required
-    global resources have not been initialized.
+    1 after local setup and publication succeed; 0 for invalid arguments,
+    failed local setup, or if global initialization has not been started.
 
 --*/
 int MHT_CDECL InitChannel(const char* channel, const char* channelId, int timeoutMs, unsigned char enable7TvEmotes, EmoteErrorCallback onError, void* userData);
@@ -122,8 +123,8 @@ int MHT_CDECL InitChannel(const char* channel, const char* channelId, int timeou
 Routine Description:
 
     Calculates a chat message's height. All strings are null-terminated UTF-8.
-    Missing third-party emotes are measured as text until loaded. Twitch images
-    use a 28x28 placeholder until fetched. Failed images retry in the background.
+    Missing third-party emotes are measured as text until their catalogs load.
+    Known BTTV and Twitch images use a 28x28 placeholder until fetched.
 
 Arguments:
 
@@ -144,8 +145,9 @@ Arguments:
 
 Return Value:
 
-    The message height, or 0 for an unknown or pending channel, failed channel
-    setup, or invalid input.
+    The message height, or 0 for an unknown channel or invalid input. An
+    exception during measurement returns 0 and reports code 7 through the
+    channel's error callback.
 
 --*/
 float MHT_CDECL CalculateMessageHeight(const char* channel, const char* input, const char* username, const char* displayName, int numberOfBadges, const TwitchEmote* twitchEmotes, int twitchEmotesLen);

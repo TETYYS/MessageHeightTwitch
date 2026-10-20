@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -64,6 +66,81 @@ public class NativeApiTests
         return height;
     }
 
+    private sealed class PendingCatalogHandler : HttpMessageHandler
+    {
+        internal readonly TaskCompletionSource Started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage Request, CancellationToken Token)
+        {
+            Started.TrySetResult();
+            await Task.Delay(Timeout.Infinite, Token);
+            return new(HttpStatusCode.NotFound);
+        }
+    }
+
+    [Fact]
+    public async Task MeasurementExceptionsAreReportedThroughTheChannelCallback()
+    {
+        var channel = Channel();
+        var errors = new List<(EmoteErrorCode Code, string Message)>();
+        Native.QueueChannel(channel, "id", 1000, false, (code, message) => errors.Add((code, message)), Measurer);
+        await MeasureOncePublished(channel, "hi");
+        Assert.Equal(0, Measure(channel, new string('a', 501), "user", "user"));
+        var error = Assert.Single(errors);
+        Assert.Equal(EmoteErrorCode.MeasurementFailed, error.Code);
+        Assert.Contains("ArgumentException", error.Message);
+        Assert.Contains("500", error.Message);
+    }
+
+    [Fact]
+    public async Task FailedCatalogFetchDoesNotPreventNativeMeasurement()
+    {
+        var channel = Channel();
+        var reported = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var http = new FakeHttp(_ => new(System.Net.HttpStatusCode.ServiceUnavailable));
+        using var client = new System.Net.Http.HttpClient(http);
+        Native.QueueChannel(channel, "id", 5000, false, (_, _) => reported.TrySetResult(), Client: client, Globals: new());
+        try {
+            await reported.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(Measure(channel, "hello", "user", "user") > 0);
+            Assert.True(Measure(channel, "Emote", "user", "user", [("Emote", "https://example.test/bad")]) > 0);
+        } finally {
+            Native.QueueChannel(channel, "id", 5000, false, null, Measurer);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task InvalidBttvImageUsesPlaceholderAndRecoversWithoutReplacingChannel(bool GlobalImage)
+    {
+        var channel = Channel();
+        var reported = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var recover = false;
+        using var http = new FakeHttp(path => path switch {
+            "api.betterttv.net/3/cached/emotes/global" => FakeHttp.Json(GlobalImage ? "[{\"id\":\"bad\",\"code\":\"Broken\"}]" : "[]"),
+            "api.frankerfacez.com/v1/set/global" => FakeHttp.Json("{\"default_sets\":[],\"sets\":{}}"),
+            "cdn.frankerfacez.com/static/emoji/v2-.json" => FakeHttp.Json("{\"e\":[]}"),
+            "api.betterttv.net/3/cached/users/twitch/id" => FakeHttp.Json(GlobalImage ? "{}" : "{\"channelEmotes\":[{\"id\":\"bad\",\"code\":\"Broken\"}],\"sharedEmotes\":[]}"),
+            "cdn.betterttv.net/emote/bad/1x" => Volatile.Read(ref recover) ? FakeHttp.Png(40, 80) : FakeHttp.Json("not an image"),
+            _ => new(System.Net.HttpStatusCode.NotFound)
+        });
+        using var client = new System.Net.Http.HttpClient(http);
+        Native.QueueChannel(channel, "id", 5000, false, (_, message) => reported.TrySetResult(message), Client: client, Globals: new());
+        try {
+            Assert.Contains("https://cdn.betterttv.net/emote/bad/1x", await reported.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+            var placeholder = Measure(channel, "Broken", "user", "user");
+            using var expected = new Mht(false);
+            Assert.Equal(expected.CalculateMessageHeight("Broken", "user", "user", 1, new() { ["Broken"] = "https://example.test/missing" }), placeholder);
+            Assert.True(placeholder > 0);
+            Volatile.Write(ref recover, true);
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            while (Measure(channel, "Broken", "user", "user") <= placeholder)
+                await Task.Delay(10, timeout.Token);
+        } finally {
+            Native.QueueChannel(channel, "id", 5000, false, null, Measurer);
+        }
+    }
+
     [Fact]
     public async Task PublishedChannelMeasuresLikeTheManagedApi()
     {
@@ -101,21 +178,19 @@ public class NativeApiTests
     }
 
     [Fact]
-    public async Task ChannelMeasuresNothingUntilItsMeasurerIsPublished()
+    public async Task ChannelMeasuresImmediatelyWhileEveryCatalogRequestIsPending()
     {
         var channel = Channel();
-        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        Native.QueueChannel(channel, "id", 1000, false, null, () => {
-            entered.TrySetResult();
-            release.Task.Wait();
-            return Measurer();
-        });
-        await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
-
-        Assert.Equal(0, Measure(channel, "hi", "user", "User"));
-        release.TrySetResult();
-        Assert.NotEqual(0, await MeasureOncePublished(channel, "hi"));
+        using var http = new PendingCatalogHandler();
+        using var client = new HttpClient(http);
+        try {
+            Assert.Equal(1, Native.QueueChannel(channel, "id", -1, true, null, Client: client, Globals: new()));
+            Assert.True(Measure(channel, "hello", "user", "user") > 0);
+            await http.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(Measure(channel, "hello", "user", "user") > 0);
+        } finally {
+            Native.QueueChannel(channel, "id", 1000, false, null, Measurer);
+        }
     }
 
     [Fact]
@@ -132,59 +207,49 @@ public class NativeApiTests
     }
 
     [Fact]
-    public async Task MeasurerFinishedAfterItsChannelWasReplacedIsDisposed()
+    public async Task PreviousChannelRemainsAvailableDuringReplacementSetup()
     {
         var channel = Channel();
+        var first = Measurer();
+        Native.QueueChannel(channel, "id", 1000, false, null, () => first);
+        await MeasureOncePublished(channel, "hi");
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var late = Measurer();
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var created = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        Native.QueueChannel(channel, "id", 1000, false, null, () => {
+        var replacement = Task.Run(() => Native.QueueChannel(channel, "id", 1000, false, null, () => {
             entered.TrySetResult();
             release.Task.Wait();
-            created.TrySetResult();
-            return late;
-        });
-        await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        Native.QueueChannel(channel, "id", 1000, false, null, Measurer);
-        release.TrySetResult();
-        await created.Task.WaitAsync(TimeSpan.FromSeconds(5));
-
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        while (!Disposed(late)) await Task.Delay(10, timeout.Token);
+            return Measurer();
+        }));
+        try {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(replacement.IsCompleted);
+            Assert.False(Disposed(first));
+            Assert.True(Measure(channel, "hi", "user", "user") > 0);
+        } finally {
+            release.TrySetResult();
+            await replacement.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        Assert.True(Disposed(first));
+        Assert.True(Measure(channel, "hi", "user", "user") > 0);
     }
 
     [Fact]
-    public async Task ReplacedChannelReportsNoErrors()
+    public async Task FailedReplacementPreservesTheWorkingChannel()
     {
         var channel = Channel();
-        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var failed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var errors = 0;
-        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        Native.QueueChannel(channel, "id", 1000, false, (_, _) => Interlocked.Increment(ref errors), () => {
-            entered.TrySetResult();
-            release.Task.Wait();
-            failed.TrySetResult();
-            throw new InvalidOperationException("setup failed");
-        });
-        await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        // A replacement without an error callback, whose setup fails as well.
-        var second = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        Native.QueueChannel(channel, "id", 1000, false, null, () => {
-            second.TrySetResult();
-            throw new InvalidOperationException("setup failed");
-        });
-        release.TrySetResult();
-        await Task.WhenAll(failed.Task, second.Task).WaitAsync(TimeSpan.FromSeconds(5));
-        await Task.Delay(200);
-
-        Assert.Equal(0, Volatile.Read(ref errors));
+        var first = Measurer();
+        Native.QueueChannel(channel, "id", 1000, false, null, () => first);
+        await MeasureOncePublished(channel, "hi");
+        var errors = new List<(EmoteErrorCode Code, string Message)>();
+        Assert.Equal(0, Native.QueueChannel(channel, "id", 1000, false,
+            (code, message) => errors.Add((code, message)), () => throw new InvalidOperationException("setup failed")));
+        var error = Assert.Single(errors);
+        Assert.Equal(EmoteErrorCode.ChannelInitializationFailed, error.Code);
+        Assert.Contains("setup failed", error.Message);
+        Assert.False(Disposed(first));
+        Assert.True(Measure(channel, "hi", "user", "user") > 0);
     }
 
-    /// <summary>
-    /// An exception from the host's error callback must not escape into the background setup.
-    /// </summary>
     [Fact]
     public async Task ThrowingErrorCallbackIsContained()
     {
@@ -198,19 +263,34 @@ public class NativeApiTests
     }
 
     [Fact]
-    public async Task NetworkFailureIsReportedAndRetriedByTheShim()
+    public async Task CatalogFailureRetriesWhileMeasurementRemainsAvailable()
     {
         var channel = Channel();
-        var attempts = 0;
         var reported = new TaskCompletionSource<EmoteErrorCode>(TaskCreationOptions.RunContinuationsAsynchronously);
-        Native.QueueChannel(channel, "id", 5000, false, (code, _) => reported.TrySetResult(code), () => {
-            if (Interlocked.Increment(ref attempts) == 1)
-                throw new System.Net.Http.HttpRequestException("offline");
-            return Measurer();
+        var attempts = 0;
+        using var http = new FakeHttp(path => path switch {
+            "api.betterttv.net/3/cached/emotes/global" => FakeHttp.Json("[]"),
+            "api.frankerfacez.com/v1/set/global" => FakeHttp.Json("{\"default_sets\":[],\"sets\":{}}"),
+            "cdn.frankerfacez.com/static/emoji/v2-.json" => FakeHttp.Json("{\"e\":[]}"),
+            "api.betterttv.net/3/cached/users/twitch/id" => Interlocked.Increment(ref attempts) == 1
+                ? new(HttpStatusCode.ServiceUnavailable) : new(HttpStatusCode.NotFound),
+            _ => new(HttpStatusCode.NotFound)
         });
-        Assert.Equal(EmoteErrorCode.ChannelInitializationFailed, await reported.Task.WaitAsync(TimeSpan.FromSeconds(5)));
-        Assert.NotEqual(0, await MeasureOncePublished(channel, "hi"));
-        Assert.Equal(2, attempts);
+        using var client = new HttpClient(http);
+        try {
+            Assert.Equal(1, Native.QueueChannel(channel, "id", 5000, false,
+                (code, _) => reported.TrySetResult(code), Client: client, Globals: new()));
+            Assert.True(Measure(channel, "hi", "user", "user") > 0);
+            Assert.Equal(EmoteErrorCode.ChannelInitializationFailed, await reported.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            while (Volatile.Read(ref attempts) < 2) {
+                Assert.True(Measure(channel, "hi", "user", "user") > 0);
+                await Task.Delay(10, timeout.Token);
+            }
+            Assert.Equal(2, Volatile.Read(ref attempts));
+        } finally {
+            Native.QueueChannel(channel, "id", 1000, false, null, Measurer);
+        }
     }
 
     [Fact]

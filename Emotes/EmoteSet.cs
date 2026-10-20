@@ -10,7 +10,7 @@ namespace MessageHeightTwitch.Emotes;
 /// <summary>
 /// An emote's size and, when it is a modifier, how it changes the emote it attaches to.
 /// </summary>
-internal readonly record struct CatalogEmote(SizeF Size, EmoteModifier? Modifier = null, SizeF? TokenSize = null);
+internal readonly record struct CatalogEmote(SizeF Size, EmoteModifier? Modifier = null, SizeF? TokenSize = null, bool IsPlaceholder = false);
 
 /// <summary>
 /// The emotes of one catalog by name. Measurements read it without locking while loads write to it.
@@ -40,4 +40,7 @@ internal sealed class EmoteSet
     internal void Set(string Name, CatalogEmote Emote) => Emotes[Name] = Emote;
 
     internal void TryAdd(string Name, CatalogEmote Emote) => Emotes.TryAdd(Name, Emote);
+
+    internal void AddOrReplacePlaceholder(string Name, CatalogEmote Emote) =>
+        Emotes.AddOrUpdate(Name, Emote, (_, current) => current.IsPlaceholder ? Emote : current);
 }

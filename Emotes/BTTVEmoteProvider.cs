@@ -97,15 +97,19 @@ namespace MessageHeightTwitch.Emotes
 
 			var url = BTTVUrlTemplate.Replace("{{id}}", id).Replace("{{image}}", "1x");
 
-			var size = await Loading.ImageSize(url, Token).ConfigureAwait(false);
-
 			var modifier = EmoteModifier.Known(code, MessageHeightTwitch.EMOTE_PROVIDER.BTTV);
-			var entry = new CatalogEmote(size, Emote.Modifier || modifier != null ? modifier ?? new() : null);
-
+			var entry = new CatalogEmote(new SizeF(28, 28), Emote.Modifier || modifier != null ? modifier ?? new() : null, IsPlaceholder: true);
 			if (FromChannel)
-				Channel.TryAdd(code, entry);
+				Channel.AddOrReplacePlaceholder(code, entry);
 			else
-                Global.Set(code, entry);
+				Global.TryAdd(code, entry);
+
+			var size = await Loading.ImageSize(url, Token).ConfigureAwait(false);
+			entry = entry with { Size = size, IsPlaceholder = false };
+			if (FromChannel)
+				Channel.AddOrReplacePlaceholder(code, entry);
+			else
+				Global.Set(code, entry);
 		}
 
 		private static readonly HashSet<string> SupportedEmojis =

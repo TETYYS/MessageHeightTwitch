@@ -43,6 +43,6 @@ Font files are required and loaded from the first available setting:
 
 Call `InitMessageHeightTwitch(fontDir, timeoutMs, enable7TvEmotes, onError, userData)` before initializing individual channels. It loads fonts, profiles and shaping, then queues global BTTV, FFZ and optional 7TV resources.
 
-`InitChannel(channel, channelId, timeoutMs, enable7TvEmotes, onError, userData)` individual channel by queuing fetch of channel emotes. Failed attempts retry automatically. Call `InitChannel` again to refresh a channel's emotes. 
+`InitChannel(channel, channelId, timeoutMs, enable7TvEmotes, onError, userData)` sets up the channel measurer before returning success. Measurement is immediately available while emote catalogs and images load in the background. Known BTTV and Twitch images use a 28x28 placeholder until fetched. Failed loads retry automatically. Measurement exceptions are reported through the channel callback with code 7. Call `InitChannel` again to refresh a channel's emotes.
 
 See [c-interop](c-interop/README.md) and [go-interop](go-interop/README.md).
