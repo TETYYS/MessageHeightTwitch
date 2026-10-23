@@ -13,31 +13,42 @@ namespace MessageHeightTwitch;
 internal static class IcuVersion
 {
     private const int Major = 78;
-    private static readonly Lazy<(nint Data, nint Common)> LinuxLibraries = new(LoadLinuxLibraries);
+    private static readonly Lazy<nint> LinuxLibrary = new(LoadLinuxLibrary);
 
-    internal static nint LinuxCommonLibrary => LinuxLibraries.Value.Common;
+    internal static nint LinuxCommonLibrary => LinuxLibrary.Value;
 
 #pragma warning disable CA2255
     [ModuleInitializer]
     internal static void Confine()
     {
-        if (OperatingSystem.IsLinux())
-            _ = LinuxLibraries.Value;
         Wrapper.ConfineIcuVersions(Major, Major);
+        if (OperatingSystem.IsLinux())
+            _ = LinuxLibrary.Value;
     }
 #pragma warning restore CA2255
 
-    private static (nint Data, nint Common) LoadLinuxLibraries()
+    /// <summary>
+    /// Loads the bundled libicuuc with custom data
+    /// </summary>
+    private static nint LoadLinuxLibrary()
     {
         var directory = Path.Combine(LibraryDirectory(), "icu78");
+        // Do not free the handle while ICU iterators or icu.net can still use it.
+        var library = NativeLibrary.Load(Path.Combine(directory, $"libicuuc.so.{Major}"));
 
-        // Load the dependency first: libicuuc's DT_NEEDED refers to this exact SONAME.
-        // icu.net subsequently opens the already-loaded libicuuc.so.78 by SONAME. Keeping
-        // these files outside its discovery directories avoids its LD_LIBRARY_PATH mutation.
-        // Do not free either handle while ICU iterators or icu.net can still use them.
-        var data = NativeLibrary.Load(Path.Combine(directory, $"libicudata.so.{Major}"));
-        var common = NativeLibrary.Load(Path.Combine(directory, $"libicuuc.so.{Major}"));
-        return (data, common);
+        /*
+         * icu.net opens a library by path only from a directory it was given, and then prepends that directory to
+         * LD_LIBRARY_PATH for child processes, where it would shadow their system ICU. Its loader runs once, in Init,
+         * so the variable is restored right after.
+         */
+        var searchPath = Environment.GetEnvironmentVariable("LD_LIBRARY_PATH");
+        try {
+            Wrapper.SetPreferredIcu4cDirectory(directory);
+            Wrapper.Init();
+        } finally {
+            Environment.SetEnvironmentVariable("LD_LIBRARY_PATH", searchPath);
+        }
+        return library;
     }
 
     [UnconditionalSuppressMessage("SingleFile", "IL3000", Justification = "Empty Assembly.Location is handled for single-file and Native AOT deployments.")]

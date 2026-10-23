@@ -66,12 +66,13 @@ icu_tool() {
 }
 icu_tool icupkg -x "$stage/items.txt" -d "$stage/items" "$work/source/source/data/in/icudt78l.dat"
 icu_tool gendict --bytes --transform offset-0e80 "$lao" "$stage/items/brkitr/laodict.dict"
-icu_tool pkgdata -O "$build/data/icupkg.inc" -q -m dll -p icudt78l -e icudt78 -L icudata -r "$release" \
+icu_tool pkgdata -O "$build/data/icupkg.inc" -q -m static -p icudt78l -e icudt78 -L icudata -r "$release" \
     -s "$stage/items" -d "$stage/lib" -T "$stage/tmp" "$stage/items.txt"
 
-# Use real files with the dependency SONAMEs: publishing does not need symlinks,
-# ldconfig, an RPATH patch, or a changed process environment.
-cp -L -- "$stage/lib/libicudata.so.78" "$output/libicudata.so.78"
-cp -L -- "$build/lib/libicuuc.so.78" "$output/libicuuc.so.78"
-strip --strip-unneeded "$output/libicudata.so.78" "$output/libicuuc.so.78"
-sha256sum "$output/libicudata.so.78" "$output/libicuuc.so.78"
+# libicuuc with custom data. Its SONAME differs from a system libicuuc.so.78's
+${CXX:-g++} -O2 -shared -Wl,-soname,libmht-icuuc.so.78 -Wl,-Bsymbolic -Wl,-z,defs \
+    -Wl,--exclude-libs,libicudata.a -o "$output/libicuuc.so.78" "$build"/common/*.o \
+    -Wl,--whole-archive "$stage/lib/libicudata.a" -Wl,--no-whole-archive -lpthread -lm
+rm -f -- "$output/libicudata.so.78"
+strip --strip-unneeded "$output/libicuuc.so.78"
+sha256sum "$output/libicuuc.so.78"
