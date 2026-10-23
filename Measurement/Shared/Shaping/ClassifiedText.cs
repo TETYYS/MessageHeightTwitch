@@ -15,6 +15,8 @@ internal readonly record struct FontRun(Range Range, Typeface TypeFace, UScriptC
     // The candidate range whose successful HarfBuzz clusters produced this run. Replaying it preserves the
     // original glyph advances when neighboring missing clusters subsequently take another font.
     internal Range? ShapingRange { get; init; }
+    // Where the run's positions start in ClassifiedText.ShapePositions, read from the candidate's shape.
+    internal int? CachedShape { get; init; }
 }
 
 /// <summary>
@@ -31,4 +33,10 @@ internal readonly ref struct ClassifiedText(ReadOnlySpan<char> Text, ReadOnlySpa
     internal float? ShapedWidth { get; } = ShapedWidth;
     // The font the runs were found for, which a reshaped part falls back in again; none when the runs are given.
     internal Font? Font { get; init; }
+    /*
+     * Each committed run's positions and cluster marks as classification read them from its candidate's shape
+     * (FontRun.CachedShape), so that measuring the text need not shape the run again. Empty for given runs.
+     */
+    internal ReadOnlySpan<long> ShapePositions { get; init; }
+    internal ReadOnlySpan<ClusterMark> ShapeMarks { get; init; }
 }

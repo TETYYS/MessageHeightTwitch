@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 
 using HarfBuzzSharp;
@@ -10,7 +11,8 @@ namespace MessageHeightTwitch.Measurement.Shared.Shaping;
 /// </summary>
 /// <remarks>
 /// Cache usage: per measurement workspace, six lists initially sized for 1,024 entries, a 128-entry tried-face
-/// list, about 2 MiB of rented script scratch, and a 32-entry script bracket stack. The reusable HarfBuzz buffer
+/// list, about 2 MiB of rented script scratch, two rented shape caches of 2,161 entries (36 KiB of payload with
+/// usual power-of-two pool buckets), and a 32-entry script bracket stack. The reusable HarfBuzz buffer
 /// and ICU bidi resolver add native storage that varies with input.
 /// </remarks>
 internal sealed class ShapingWorkspace : IDisposable
@@ -26,6 +28,12 @@ internal sealed class ShapingWorkspace : IDisposable
     internal readonly List<Range> Pending = new(1024);
     internal readonly List<Range> Next = new(1024);
     internal readonly List<Typeface> Tried = new(128);
+    // Positions and marks of the runs the last classification committed (ClassifiedText.ShapePositions).
+    internal long[] ShapePositions = ArrayPool<long>.Shared.Rent(SHAPE_CACHE_LENGTH);
+    internal ClusterMark[] ShapeMarks = ArrayPool<ClusterMark>.Shared.Rent(SHAPE_CACHE_LENGTH);
+    internal int ShapeLength;
+    // Each committed run takes its length plus one entry, and runs never overlap.
+    private const int SHAPE_CACHE_LENGTH = 2 * MessageHeightTwitch.MAX_PARAGRAPH_UTF16 + 1;
     internal Typeface? LastShapedFont;
     internal Range LastShapedRange;
 #if TEST
@@ -44,5 +52,7 @@ internal sealed class ShapingWorkspace : IDisposable
         Buffer.Dispose();
         BidiResolver.Dispose();
         Scratch.Dispose();
+        ArrayPool<long>.Shared.Return(ShapePositions);
+        ArrayPool<ClusterMark>.Shared.Return(ShapeMarks);
     }
 }

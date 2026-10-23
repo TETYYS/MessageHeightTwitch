@@ -72,6 +72,8 @@ internal ref struct TextWidths
     internal readonly record struct WidthRun(Range Range, Typeface Typeface, HarfBuzzSharp.Direction Direction, bool ItemEnd, UScriptCode Script)
     {
         internal Range? ShapingRange { get; init; }
+        // Where the run's positions start in ShapePositions, when classification kept them.
+        internal int? CachedShape { get; init; }
     }
 
     /*
@@ -134,6 +136,8 @@ internal ref struct TextWidths
         this.Start = Start;
         this.Before = Before;
         Font = Classified.Font;
+        ShapePositions = Classified.ShapePositions;
+        ShapeMarks = Classified.ShapeMarks;
 
         this.Buffers = Buffers;
 
@@ -176,7 +180,9 @@ internal ref struct TextWidths
             var runEnd = Math.Min(fontEnd, itemEnd);
 
             runs.Add(new(runStart..runEnd, FontRuns[font].TypeFace, Items[item].Direction, ItemEnd: runEnd == itemEnd, FontRuns[font].Script) {
-                ShapingRange = FontRuns[font].ShapingRange is { } shaped ? Math.Max(Start, shaped.Start.Value)..shaped.End.Value : null
+                ShapingRange = FontRuns[font].ShapingRange is { } shaped ? Math.Max(Start, shaped.Start.Value)..shaped.End.Value : null,
+                // Kept positions cover the whole font run as classified.
+                CachedShape = Start == 0 && FontRuns[font].Range.Equals(runStart..runEnd) ? FontRuns[font].CachedShape : null
             });
             runStart = runEnd;
 
@@ -348,6 +354,10 @@ internal ref struct TextWidths
         return width;
     }
 
+    // Classification's positions of the runs it committed (ClassifiedText.ShapePositions); empty for given runs.
+    private readonly ReadOnlySpan<long> ShapePositions;
+    private readonly ReadOnlySpan<ClusterMark> ShapeMarks;
+
     // Whether the text's Han kerning types are in the workspace (ClassifyHanKerning).
     private readonly bool HanKerned;
 
@@ -473,6 +483,14 @@ internal ref struct TextWidths
         var shaped = Run.ShapingRange ?? Run.Range;
         var length = Run.Range.End.Value - Run.Range.Start.Value;
         var count = shaper.Kerning.GetFeatures(Text, shaped, Buffers.Types, Buffers.Features, ContextOffset(shaped));
+
+        // Classification shaped the run without features or the text before it: the same shape when neither applies.
+        if (Run.CachedShape is { } cached && !ShapePositions.IsEmpty && count == 0 && ContextOffset(shaped) == 0) {
+            ShapePositions.Slice(cached, length + 1).CopyTo(Buffers.RunPositions);
+            ShapeMarks.Slice(cached, length).CopyTo(Buffers.RunMarks);
+            PositionRunStart = Run.Range.Start.Value;
+            return;
+        }
 
         shaper.CharacterPositions(Text, shaped, Shaping.Buffer, Buffers.Features.AsSpan(0, count), Run.Script, Run.Direction,
             Buffers.RunPositions.AsSpan(0, length + 1), Buffers.RunMarks.AsSpan(0, length), Before, Run.Range);
