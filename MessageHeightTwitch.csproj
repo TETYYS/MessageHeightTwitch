@@ -57,12 +57,12 @@
     <DirectPInvoke Include="__Internal!dladdr" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseBundledLinuxIcu)' == 'true'">
-    <Content Include="$(LinuxIcuDirectory)/libicudata.so.78;$(LinuxIcuDirectory)/libicuuc.so.78" Link="icu78/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(LinuxIcuDirectory)/libicuuc.so.78" Link="icu78/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
     
   <Target Name="BuildLinuxIcu" BeforeTargets="BeforeBuild" Condition="'$(UseBundledLinuxIcu)' == 'true' and '$(DesignTimeBuild)' != 'true'"
           Inputs="$(MSBuildThisFileDirectory)Tools/IcuData/Build-IcuData.sh;$(MSBuildThisFileDirectory)Tools/IcuData/items.txt"
-          Outputs="$(LinuxIcuDirectory)/libicudata.so.78;$(LinuxIcuDirectory)/libicuuc.so.78">
+          Outputs="$(LinuxIcuDirectory)/libicuuc.so.78">
     <Error Condition="!$([MSBuild]::IsOSPlatform('Linux'))" Text="Build ICU on Linux with a toolchain matching $(LinuxNativeRuntimeIdentifier): sh Tools/IcuData/Build-IcuData.sh --output Native/icu78/$(LinuxNativeRuntimeIdentifier)" />
     <Exec Command="sh &quot;$(MSBuildThisFileDirectory)Tools/IcuData/Build-IcuData.sh&quot; --output &quot;$(LinuxIcuDirectory)&quot;" />
   </Target>
