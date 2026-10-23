@@ -53,27 +53,91 @@ public partial class HarfBuzz : IDisposable
     private Range[]? UnicodeRanges;
     private NativeFont? RangeFont;
 
-    internal void LimitToUnicodeRanges(Range[] Ranges)
+    // The sub-font's native data (RangeFunctions): the parent font, the range count, then each range's bounds.
+    private unsafe nint* RangeData;
+
+    internal unsafe void LimitToUnicodeRanges(Range[] Ranges)
     {
-        var parent = Font;
-        var functions = new FontFunctions();
-
-        functions.SetNominalGlyphDelegate((NativeFont font, object fontData, uint unicode, out uint glyph) => {
-            glyph = 0;
-            return InUnicodeRange((int)unicode) && parent.TryGetNominalGlyph(unicode, out glyph);
-        }, null);
-
-        functions.SetVariationGlyphDelegate((NativeFont font, object fontData, uint unicode, uint selector, out uint glyph) => {
-            glyph = 0;
-            return InUnicodeRange((int)unicode) && parent.TryGetVariationGlyph(unicode, selector, out glyph);
-        }, null);
-
-        functions.MakeImmutable();
-        var limited = new NativeFont(parent);
-        limited.SetFontFunctions(functions);
+        RangeData = (nint*)NativeMemory.Alloc((nuint)(2 + 2 * Ranges.Length), (nuint)sizeof(nint));
+        RangeData[0] = Font.Handle;
+        RangeData[1] = Ranges.Length;
+        for (var x = 0; x < Ranges.Length; x++) {
+            RangeData[2 + 2 * x] = Ranges[x].Start.Value;
+            RangeData[3 + 2 * x] = Ranges[x].End.Value;
+        }
+        var limited = new NativeFont(Font);
+        FontSetFuncs(limited.Handle, RangeFunctions, (nint)RangeData, 0);
         RangeFont = limited;
         UnicodeRanges = Ranges;
     }
+
+    // Glyph lookups limited to the ranges
+    private static readonly unsafe nint RangeFunctions = CreateRangeFunctions();
+
+    private static unsafe nint CreateRangeFunctions()
+    {
+        var functions = FontFuncsCreate();
+        SetNominalGlyphFunc(functions, &RangeNominalGlyph, 0, 0);
+        SetNominalGlyphsFunc(functions, &RangeNominalGlyphs, 0, 0);
+        SetVariationGlyphFunc(functions, &RangeVariationGlyph, 0, 0);
+        FontFuncsMakeImmutable(functions);
+        return functions;
+    }
+
+    private static unsafe bool InRangeData(nint* Data, uint Codepoint)
+    {
+        for (nint x = 0; x < Data[1]; x++)
+            if (Data[2 + 2 * x] <= Codepoint && Codepoint <= Data[3 + 2 * x])
+                return true;
+        return false;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe int RangeNominalGlyph(nint Font, nint FontData, uint Unicode, uint* Glyph, nint UserData)
+    {
+        *Glyph = 0;
+        var data = (nint*)FontData;
+        return InRangeData(data, Unicode) ? GetNominalGlyph(data[0], Unicode, Glyph) : 0;
+    }
+
+    /// <summary>
+    /// HarfBuzz's batch lookup: the number of characters mapped before the first one without a glyph.
+    /// </summary>
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe uint RangeNominalGlyphs(nint Font, nint FontData, uint Count, byte* FirstUnicode, uint UnicodeStride, byte* FirstGlyph, uint GlyphStride, nint UserData)
+    {
+        var data = (nint*)FontData;
+        for (var x = 0u; x < Count; x++) {
+            var unicode = *(uint*)(FirstUnicode + x * UnicodeStride);
+            if (!InRangeData(data, unicode) || GetNominalGlyph(data[0], unicode, (uint*)(FirstGlyph + x * GlyphStride)) == 0)
+                return x;
+        }
+        return Count;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe int RangeVariationGlyph(nint Font, nint FontData, uint Unicode, uint Selector, uint* Glyph, nint UserData)
+    {
+        *Glyph = 0;
+        var data = (nint*)FontData;
+        return InRangeData(data, Unicode) ? GetVariationGlyph(data[0], Unicode, Selector, Glyph) : 0;
+    }
+
+    // The parent's lookups read its cmap natively, without calling back into managed code.
+    [LibraryImport("libHarfBuzzSharp", EntryPoint = "hb_font_get_nominal_glyph"), UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)]), SuppressGCTransition]
+    private static unsafe partial int GetNominalGlyph(nint Font, uint Unicode, uint* Glyph);
+
+    [LibraryImport("libHarfBuzzSharp", EntryPoint = "hb_font_get_variation_glyph"), UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)]), SuppressGCTransition]
+    private static unsafe partial int GetVariationGlyph(nint Font, uint Unicode, uint Selector, uint* Glyph);
+
+    [LibraryImport("libHarfBuzzSharp", EntryPoint = "hb_font_funcs_set_nominal_glyph_func"), UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe partial void SetNominalGlyphFunc(nint Functions, delegate* unmanaged[Cdecl]<nint, nint, uint, uint*, nint, int> Func, nint UserData, nint Destroy);
+
+    [LibraryImport("libHarfBuzzSharp", EntryPoint = "hb_font_funcs_set_nominal_glyphs_func"), UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe partial void SetNominalGlyphsFunc(nint Functions, delegate* unmanaged[Cdecl]<nint, nint, uint, byte*, uint, byte*, uint, nint, uint> Func, nint UserData, nint Destroy);
+
+    [LibraryImport("libHarfBuzzSharp", EntryPoint = "hb_font_funcs_set_variation_glyph_func"), UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe partial void SetVariationGlyphFunc(nint Functions, delegate* unmanaged[Cdecl]<nint, nint, uint, uint, uint*, nint, int> Func, nint UserData, nint Destroy);
 
     private bool InUnicodeRange(int Codepoint) => FontDesc.InRanges(UnicodeRanges!, Codepoint);
 
@@ -399,7 +463,15 @@ public partial class HarfBuzz : IDisposable
     internal void CharacterPositions(ReadOnlySpan<char> Text, Range Run, Buffer Buffer, ReadOnlySpan<Feature> Features, UScriptCode Script, Direction Direction, Span<long> Positions, Span<ClusterMark> Marks, ReadOnlySpan<char> Before = default, Range? Slice = null)
     {
         ShapeRange(Text, Run, Buffer, Direction, Features, Script, Before);
+        ReadPositions(Text, Run, Buffer, Direction, Positions, Marks, Before, Slice);
+    }
 
+    /// <summary>
+    /// The positions and marks of <see cref="CharacterPositions"/> from <paramref name="Buffer"/>, which this font has
+    /// just shaped with the same arguments.
+    /// </summary>
+    internal void ReadPositions(ReadOnlySpan<char> Text, Range Run, Buffer Buffer, Direction Direction, Span<long> Positions, Span<ClusterMark> Marks, ReadOnlySpan<char> Before = default, Range? Slice = null)
+    {
         var infos = Buffer.GetGlyphInfoSpan();
         var glyphs = Buffer.GetGlyphPositionSpan();
         var (shapeStart, _) = Run.GetOffsetAndLength(Text.Length);
@@ -492,6 +564,7 @@ public partial class HarfBuzz : IDisposable
     public unsafe void Dispose()
     {
         RangeFont?.Dispose();
+        NativeMemory.Free(RangeData);
         Font.Dispose();
         Unscaled.Dispose();
         NativeMemory.Free(AdvanceTable);

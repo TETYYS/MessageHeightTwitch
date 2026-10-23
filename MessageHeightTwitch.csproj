@@ -64,7 +64,6 @@
           Inputs="$(MSBuildThisFileDirectory)Tools/IcuData/Build-IcuData.sh;$(MSBuildThisFileDirectory)Tools/IcuData/items.txt"
           Outputs="$(LinuxIcuDirectory)/libicudata.so.78;$(LinuxIcuDirectory)/libicuuc.so.78">
     <Error Condition="!$([MSBuild]::IsOSPlatform('Linux'))" Text="Build ICU on Linux with a toolchain matching $(LinuxNativeRuntimeIdentifier): sh Tools/IcuData/Build-IcuData.sh --output Native/icu78/$(LinuxNativeRuntimeIdentifier)" />
-    <Error Condition="'$(LinuxNativeRuntimeIdentifier)' != '$(NETCoreSdkRuntimeIdentifier)'" Text="ICU must be built on a host matching $(LinuxNativeRuntimeIdentifier)." />
     <Exec Command="sh &quot;$(MSBuildThisFileDirectory)Tools/IcuData/Build-IcuData.sh&quot; --output &quot;$(LinuxIcuDirectory)&quot;" />
   </Target>
     

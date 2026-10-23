@@ -61,6 +61,9 @@ internal readonly ref struct HarfBuzzShaper(ReadOnlySpan<char> Text)
         var Bold = Font.Bold;
         var Fonts = Font.FallbackList;
         Ws.Runs.Clear();
+        Ws.ShapeLength = 0;
+        PooledBuffers.Ensure(ref Ws.ShapePositions, 2 * Text.Length + 1);
+        PooledBuffers.Ensure(ref Ws.ShapeMarks, 2 * Text.Length + 1);
         if (Text.IsEmpty) {
             return new(Text, CollectionsMarshal.AsSpan(Ws.Runs), CollectionsMarshal.AsSpan(Ws.Bidi)) {
                 Font = Font
@@ -97,7 +100,11 @@ internal readonly ref struct HarfBuzzShaper(ReadOnlySpan<char> Text)
             Ws.LastShapedFont == Ws.Runs[0].TypeFace && Ws.LastShapedRange.Equals(source))
             shapedWidth = HarfBuzz.FixedToFloat(TextWidths.SnapFixed(FontCache.GetShaper(Ws.Runs[0].TypeFace).ShapedFixedWidth(Ws.Buffer)));
 
-        return new(Text, CollectionsMarshal.AsSpan(Ws.Runs), CollectionsMarshal.AsSpan(Ws.Bidi), shapedWidth) { Font = Font };
+        return new(Text, CollectionsMarshal.AsSpan(Ws.Runs), CollectionsMarshal.AsSpan(Ws.Bidi), shapedWidth) {
+            Font = Font,
+            ShapePositions = Ws.ShapePositions.AsSpan(0, Ws.ShapeLength),
+            ShapeMarks = Ws.ShapeMarks.AsSpan(0, Ws.ShapeLength)
+        };
     }
 
     /// <summary>
@@ -170,14 +177,21 @@ internal readonly ref struct HarfBuzzShaper(ReadOnlySpan<char> Text)
             var sliceStart = range.Start.Value;
             bool? sliceSupported = null;
 
-            static void commitSlice(Range Slice, bool Supported, Range ShapingRange, Typeface Candidate, UScriptCode Script, ShapingWorkspace Ws)
+            // A committed slice keeps its positions from this shape, which the buffer holds until the next range.
+            static void commitSlice(ReadOnlySpan<char> Text, Range Slice, bool Supported, Range ShapingRange, Typeface Candidate, HarfBuzz Shaper, UScriptCode Script, HarfBuzzSharp.Direction Direction, ShapingWorkspace Ws)
             {
-                if (Supported)
-                    Ws.Runs.Add(new(Slice, Candidate, Script) {
-                        ShapingRange = ShapingRange
-                    });
-                else
+                if (!Supported) {
                     Ws.Next.Add(Slice);
+                    return;
+                }
+                var length = Slice.End.Value - Slice.Start.Value;
+                var cached = Ws.ShapeLength;
+                Shaper.ReadPositions(Text, ShapingRange, Ws.Buffer, Direction, Ws.ShapePositions.AsSpan(cached, length + 1), Ws.ShapeMarks.AsSpan(cached, length), Slice: Slice);
+                Ws.ShapeLength += length + 1;
+                Ws.Runs.Add(new(Slice, Candidate, Script) {
+                    ShapingRange = ShapingRange,
+                    CachedShape = cached
+                });
             }
 
             while (glyph >= 0 && glyph < infos.Length) {
@@ -195,17 +209,15 @@ internal readonly ref struct HarfBuzzShaper(ReadOnlySpan<char> Text)
                     supported &= shaper.SupportsVariationSelectors(Text[start..end]);
 
                 if (sliceSupported != null && sliceSupported != supported) {
-                    commitSlice(sliceStart..start, sliceSupported.Value, range, Candidate, Script, Ws);
+                    commitSlice(Text, sliceStart..start, sliceSupported.Value, range, Candidate, shaper, Script, Direction, Ws);
                     sliceStart = start;
                 }
 
                 sliceSupported = supported;
             }
 
-            if (sliceSupported != null)
-                commitSlice(sliceStart..range.End.Value, sliceSupported.Value, range, Candidate, Script, Ws);
-            else
-                Ws.Runs.Add(new(range, Candidate, Script) { ShapingRange = range });
+            // A range without glyphs is committed whole.
+            commitSlice(Text, sliceStart..range.End.Value, sliceSupported ?? true, range, Candidate, shaper, Script, Direction, Ws);
 
             // Blink extracts in HarfBuzz's visual glyph order. Keep the unresolved RTL slices in that
             // order too, because the next system fallback hint comes from the front of this queue.
